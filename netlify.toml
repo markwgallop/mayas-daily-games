@@ -1,0 +1,22 @@
+# Netlify configuration for Maya's Daily Games
+#
+# Environment variables to set in the Netlify UI
+# (Site configuration → Environment variables):
+#
+#   SUPABASE_URL       = https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  = eyJ...
+#
+# The build command below substitutes those values into js/config.js
+# before Netlify publishes the site.
+
+[build]
+  publish = "."
+  command = "sed -i \"s|YOUR_SUPABASE_URL|$SUPABASE_URL|g; s|YOUR_SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g\" js/config.js"
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

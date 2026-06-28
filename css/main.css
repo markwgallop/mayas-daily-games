@@ -1,0 +1,588 @@
+/* =========================================================
+   Maya's Daily Games — shared styles
+   Designed for touch-first use; big targets, clear contrast.
+   ========================================================= */
+
+/* ---------- Reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Colour palette */
+  --cream:       #FFFBF5;
+  --text:        #1a1a2e;
+  --text-light:  #5a5a7a;
+  --border:      #e0dcd8;
+  --shadow:      rgba(0,0,0,0.08);
+
+  /* Game accent colours */
+  --facts-hue:   #4A90D9;   /* blue */
+  --ten-hue:     #F5A623;   /* amber */
+  --box-hue:     #5CB85C;   /* green */
+  --flash-hue:   #9B59B6;   /* purple */
+
+  /* UI */
+  --radius:      16px;
+  --radius-sm:   10px;
+  --success:     #2ECC71;
+  --correct:     #27AE60;
+  --wrong:       #E74C3C;
+  --neutral:     #ECF0F1;
+}
+
+html, body {
+  height: 100%;
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Prevent unwanted scroll bounce on touch */
+body { overflow-x: hidden; }
+
+a { text-decoration: none; color: inherit; }
+
+/* ---------- Google Font (Nunito — round, friendly) ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+/* ---------- Layout helpers ---------- */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 48px;
+  gap: 24px;
+}
+
+.page-header {
+  text-align: center;
+  padding-top: 8px;
+}
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+.page-header .subtitle {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+/* ---------- Landing page tiles ---------- */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.tile {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px var(--shadow);
+  padding: 28px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  border: 3px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+.tile:active { transform: scale(0.97); }
+
+.tile.done {
+  border-color: var(--success);
+}
+.tile.done::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--success);
+}
+
+.tile-icon { font-size: 2.8rem; line-height: 1; }
+.tile-name {
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+}
+.tile-desc {
+  font-size: 0.78rem;
+  color: var(--text-light);
+  text-align: center;
+  line-height: 1.3;
+}
+.tile-score {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--correct);
+  margin-top: 2px;
+}
+
+/* Accent stripe at top of each tile */
+.tile::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--tile-color, #ccc);
+}
+.tile.facts  { --tile-color: var(--facts-hue); }
+.tile.make-ten  { --tile-color: var(--ten-hue); }
+.tile.shut-box  { --tile-color: var(--box-hue); }
+.tile.dice-flash { --tile-color: var(--flash-hue); }
+
+/* ---------- Game container ---------- */
+.game-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 48px;
+}
+
+.game-header {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.back-btn {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.1s;
+  line-height: 1;
+}
+.back-btn:active { background: var(--border); }
+
+.game-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  flex: 1;
+}
+
+.progress-bar-wrap {
+  width: 100%;
+  max-width: 480px;
+  height: 10px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent, var(--facts-hue));
+  transition: width 0.35s ease;
+}
+
+/* ---------- Card (question area) ---------- */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px var(--shadow);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.question-text {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  text-align: center;
+}
+
+.question-sub {
+  font-size: 1rem;
+  color: var(--text-light);
+  text-align: center;
+}
+
+/* ---------- Answer display (facts game) ---------- */
+.answer-display {
+  font-size: 2.8rem;
+  font-weight: 900;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 4px solid var(--border);
+  width: 120px;
+  text-align: center;
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+.answer-display.has-value { border-color: var(--accent, var(--facts-hue)); }
+.answer-display.correct   { border-color: var(--correct); color: var(--correct); }
+.answer-display.wrong     { border-color: var(--wrong); color: var(--wrong); }
+
+/* ---------- Number pad ---------- */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+.numpad-btn {
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: inherit;
+  padding: 18px 0;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.1s;
+}
+.numpad-btn:active { background: var(--neutral); transform: scale(0.95); }
+.numpad-btn.del { font-size: 1.2rem; color: var(--text-light); }
+.numpad-btn.submit {
+  background: var(--accent, var(--facts-hue));
+  color: #fff;
+  border-color: transparent;
+  font-size: 1.1rem;
+}
+.numpad-btn.submit:active { filter: brightness(0.9); }
+
+/* ---------- Multiple choice buttons ---------- */
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+}
+.choice-btn {
+  background: #fff;
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: inherit;
+  padding: 22px 12px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+  text-align: center;
+}
+.choice-btn:active { transform: scale(0.97); }
+.choice-btn.correct-choice { background: #E8F8EE; border-color: var(--correct); color: var(--correct); }
+.choice-btn.wrong-choice   { background: #FDECEA; border-color: var(--wrong); color: var(--wrong); }
+
+/* ---------- Feedback banner ---------- */
+.feedback {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  min-height: 28px;
+  padding: 4px 0;
+}
+.feedback.ok  { color: var(--correct); }
+.feedback.err { color: var(--wrong); }
+
+/* ---------- Completion screen ---------- */
+.completion {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  padding: 20px 0;
+}
+.completion.visible { display: flex; }
+
+.completion-star { font-size: 5rem; }
+.completion-title { font-size: 2rem; font-weight: 900; }
+.completion-score { font-size: 1.1rem; color: var(--text-light); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 32px;
+  border-radius: 99px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.1s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); filter: brightness(0.92); }
+
+.btn-primary {
+  background: var(--accent, var(--facts-hue));
+  color: #fff;
+}
+.btn-secondary {
+  background: var(--neutral);
+  color: var(--text);
+}
+
+/* ---------- Shut the Box specific ---------- */
+.box-tiles {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.box-tile {
+  width: 60px;
+  height: 70px;
+  border-radius: var(--radius-sm);
+  border: 3px solid var(--border);
+  background: #fff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.box-tile:active { transform: scale(0.95); }
+.box-tile.selected {
+  background: var(--accent, var(--box-hue));
+  color: #fff;
+  border-color: transparent;
+}
+.box-tile.closed {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+}
+
+.dice-display {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+}
+.die {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: #fff;
+  border: 3px solid var(--border);
+  display: grid;
+  grid-template-areas:
+    "a . c"
+    ". e ."
+    "d . f";
+  padding: 10px;
+  gap: 4px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text);
+  align-self: center;
+  justify-self: center;
+}
+/* Dot visibility per face value — set via JS data attribute */
+
+/* ---------- Dice Flash specific ---------- */
+.flash-frame {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius);
+  background: #fff;
+  border: 3px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.flash-frame.hidden > * { visibility: hidden; }
+
+/* Ten-frame layout */
+.ten-frame {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 8px;
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+}
+.ten-cell {
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: transparent;
+}
+.ten-cell.filled { background: var(--accent, var(--flash-hue)); border-color: transparent; }
+
+/* ---------- Portal ---------- */
+.portal-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 64px;
+  gap: 28px;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px var(--shadow);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.login-card h2 { font-size: 1.4rem; font-weight: 900; text-align: center; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label { font-size: 0.85rem; font-weight: 700; color: var(--text-light); }
+.field input {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  background: var(--cream);
+}
+.field input:focus { border-color: var(--facts-hue); }
+
+.login-error { color: var(--wrong); font-size: 0.88rem; text-align: center; min-height: 20px; }
+
+/* Portal data views */
+.portal-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tab-btn {
+  padding: 10px 20px;
+  border-radius: 99px;
+  border: 2px solid var(--border);
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+.tab-btn.active {
+  background: var(--facts-hue);
+  color: #fff;
+  border-color: transparent;
+}
+
+.results-section { width: 100%; max-width: 700px; }
+.results-section h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+table.data-table th {
+  background: var(--neutral);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+}
+table.data-table td { padding: 10px 14px; border-top: 1px solid var(--border); }
+table.data-table tr:last-child td { border-bottom: none; }
+
+.score-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.score-pill.perfect { background: #E8F8EE; color: var(--correct); }
+.score-pill.good    { background: #FFF3CD; color: #856404; }
+.score-pill.needs   { background: #FDECEA; color: var(--wrong); }
+
+.fact-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #FDECEA;
+  color: var(--wrong);
+  margin: 3px;
+}
+.fact-chip.mastered { background: #E8F8EE; color: var(--correct); }
+
+.empty-state {
+  text-align: center;
+  color: var(--text-light);
+  padding: 40px 20px;
+  font-size: 0.95rem;
+}
+
+/* ---------- Utility ---------- */
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+.mt-8  { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+
+/* ---------- Date display ---------- */
+.date-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 400px) {
+  .tile-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .question-text { font-size: 2.4rem; }
+  .card { padding: 24px 18px; }
+  .numpad-btn { padding: 14px 0; font-size: 1.4rem; }
+}

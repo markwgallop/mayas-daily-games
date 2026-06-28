@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Maya's Daily Games</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .page-header h1 { font-size: 1.9rem; }
+    .all-done-banner {
+      background: #E8F8EE;
+      border: 2px solid var(--success);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--correct);
+      font-size: 1rem;
+      width: 100%;
+      max-width: 520px;
+      display: none;
+    }
+    .all-done-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>Maya's Daily Games</h1>
+      <p class="subtitle date-label" id="dateLabel"></p>
+    </header>
+
+    <div class="all-done-banner" id="allDoneBanner">
+      All done for today! Great work! &#127775;
+    </div>
+
+    <div class="tile-grid">
+
+      <a href="games/facts.html" class="tile facts" id="tile-facts">
+        <div class="tile-icon">&#10133;</div>
+        <div class="tile-name">Daily Facts</div>
+        <div class="tile-desc">10 addition &amp; subtraction facts</div>
+        <div class="tile-score" id="score-facts"></div>
+      </a>
+
+      <a href="games/make-ten.html" class="tile make-ten" id="tile-make_ten">
+        <div class="tile-icon">&#128081;</div>
+        <div class="tile-name">Make a Ten</div>
+        <div class="tile-desc">Find the partner that makes 10</div>
+        <div class="tile-score" id="score-make_ten"></div>
+      </a>
+
+      <a href="games/shut-box.html" class="tile shut-box" id="tile-shut_box">
+        <div class="tile-icon">&#127922;</div>
+        <div class="tile-name">Shut the Box</div>
+        <div class="tile-desc">Roll dice, close the tiles</div>
+        <div class="tile-score" id="score-shut_box"></div>
+      </a>
+
+      <a href="games/dice-flash.html" class="tile dice-flash" id="tile-dice_flash">
+        <div class="tile-icon">&#128064;</div>
+        <div class="tile-name">Dice Flash</div>
+        <div class="tile-desc">How many dots? Quick!</div>
+        <div class="tile-score" id="score-dice_flash"></div>
+      </a>
+
+    </div>
+
+    <a href="portal.html" style="color: var(--text-light); font-size:0.82rem; margin-top:8px;">
+      Parent portal &#8250;
+    </a>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/seed.js"></script>
+  <script src="js/completion.js"></script>
+  <script>
+    // Date label
+    const now = new Date();
+    document.getElementById('dateLabel').textContent = now.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
+    });
+
+    // Restore completion state from localStorage
+    const done = getAllDone();
+    const gameNames = { facts: 'facts', make_ten: 'make_ten', shut_box: 'shut_box', dice_flash: 'dice_flash' };
+    const scoreLabels = {
+      facts:      (s, t) => `${s}/${t} correct`,
+      make_ten:   (s, t) => `${s}/${t} correct`,
+      shut_box:   (s, t) => `Score: ${s}`,   // s = remaining tiles (lower=better)
+      dice_flash: (s, t) => `${s}/${t} correct`,
+    };
+
+    let allDone = true;
+    for (const [game, result] of Object.entries(done)) {
+      const tile = document.getElementById(`tile-${game}`);
+      const scoreEl = document.getElementById(`score-${game}`);
+      if (result) {
+        tile.classList.add('done');
+        scoreEl.textContent = scoreLabels[game](result.score, result.total);
+      } else {
+        allDone = false;
+      }
+    }
+
+    if (allDone) {
+      document.getElementById('allDoneBanner').classList.add('visible');
+    }
+  </script>
+</body>
+</html>

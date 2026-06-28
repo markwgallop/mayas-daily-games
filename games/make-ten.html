@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Make a Ten — Maya's Games</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    :root { --accent: var(--ten-hue); }
+
+    .ten-prompt {
+      font-size: 1rem;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+    .ten-number {
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--text);
+    }
+    .ten-equation {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-light);
+      min-height: 36px;
+    }
+    .ten-equation span { color: var(--text); }
+
+    /* 2x2 choice grid with bigger buttons */
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .choice-btn {
+      padding: 28px 12px;
+      font-size: 2.4rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="game-page">
+
+    <div class="game-header">
+      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <span class="game-title">Make a Ten</span>
+      <span style="font-size:0.85rem; color:var(--text-light); font-weight:600;" id="counter">1 / 8</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Question -->
+    <div class="card" id="questionCard">
+      <div class="ten-prompt">What makes 10?</div>
+      <div class="ten-number" id="mainNumber"></div>
+      <div class="ten-equation" id="equation"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- Choices -->
+    <div class="choices" id="choices"></div>
+
+    <!-- Completion -->
+    <div class="card completion" id="completionCard">
+      <div class="completion-star">&#127775;</div>
+      <div class="completion-title">All done!</div>
+      <div class="completion-score" id="completionScore"></div>
+      <button class="btn btn-primary mt-16" onclick="location.href='../index.html'">
+        Back to games
+      </button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/seed.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/completion.js"></script>
+  <script>
+    // Numbers 1–9; pick 8 for today's set, seeded.
+    const ALL_NUMBERS = [1,2,3,4,5,6,7,8,9];
+    const TOTAL = 8;
+
+    const rng = todayRNG(2); // salt=2 for make-ten
+    const todayNums = seededPick(ALL_NUMBERS, TOTAL, rng);
+
+    let current = 0;
+    let score = 0;
+    let locked = false;
+    const details = [];
+
+    const mainNumberEl = document.getElementById('mainNumber');
+    const equationEl   = document.getElementById('equation');
+    const feedbackEl   = document.getElementById('feedback');
+    const counterEl    = document.getElementById('counter');
+    const progressBar  = document.getElementById('progressBar');
+    const choicesEl    = document.getElementById('choices');
+    const questionCard = document.getElementById('questionCard');
+    const completionCard = document.getElementById('completionCard');
+
+    function wrongChoices(correct, n) {
+      // Plausible wrong answers: numbers close to correct, within 1–9, not the number itself
+      const pool = [];
+      for (let x = 1; x <= 9; x++) {
+        if (x !== correct) pool.push(x);
+      }
+      // Prefer close numbers
+      pool.sort((a, b) => Math.abs(a - correct) - Math.abs(b - correct));
+      // Take the closest n, then shuffle them
+      const picked = pool.slice(0, n + 2);
+      return seededShuffle(picked, rng).slice(0, n);
+    }
+
+    function renderQuestion() {
+      const num = todayNums[current];
+      const partner = 10 - num;
+      locked = false;
+
+      mainNumberEl.textContent = num;
+      equationEl.innerHTML = `${num} + <span>?</span> = 10`;
+      feedbackEl.textContent = '';
+      feedbackEl.className = 'feedback';
+      counterEl.textContent = `${current + 1} / ${TOTAL}`;
+      progressBar.style.width = `${(current / TOTAL) * 100}%`;
+
+      // Build 4 choices: correct + 3 wrong
+      const wrongs = wrongChoices(partner, 3);
+      const allChoices = seededShuffle([partner, ...wrongs], rng);
+
+      choicesEl.innerHTML = '';
+      allChoices.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = val;
+        btn.addEventListener('click', () => handleChoice(val, partner, num, btn));
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function handleChoice(val, partner, num, btn) {
+      if (locked) return;
+
+      const isCorrect = val === partner;
+      details.push({ number: num, partner, given: val, correct: isCorrect });
+
+      // Highlight all buttons
+      document.querySelectorAll('.choice-btn').forEach(b => {
+        const bVal = parseInt(b.textContent, 10);
+        if (bVal === partner) b.classList.add('correct-choice');
+        else if (b === btn && !isCorrect) b.classList.add('wrong-choice');
+      });
+
+      if (isCorrect) {
+        score++;
+        feedbackEl.textContent = 'Yes! ' + num + ' + ' + partner + ' = 10';
+        feedbackEl.className = 'feedback ok';
+        equationEl.innerHTML = `${num} + <span>${partner}</span> = 10`;
+      } else {
+        feedbackEl.textContent = `${num} + ${partner} = 10. Try to remember it!`;
+        feedbackEl.className = 'feedback err';
+        equationEl.innerHTML = `${num} + <span>${partner}</span> = 10`;
+      }
+
+      locked = true;
+      setTimeout(advance, 1100);
+    }
+
+    function advance() {
+      current++;
+      if (current >= TOTAL) {
+        finish();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finish() {
+      questionCard.classList.add('hidden');
+      choicesEl.classList.add('hidden');
+      completionCard.classList.add('visible');
+      progressBar.style.width = '100%';
+      document.getElementById('completionScore').textContent =
+        `${score} out of ${TOTAL} correct`;
+      markDone('make_ten', score, TOTAL);
+      saveResult({ game: 'make_ten', score, total: TOTAL, details });
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>

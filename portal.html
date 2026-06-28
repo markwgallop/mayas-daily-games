@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Parent Portal — Maya's Games</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .portal-title { font-size: 1.6rem; font-weight: 900; }
+    .portal-subtitle { color: var(--text-light); font-size: 0.9rem; }
+
+    .logout-btn {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+
+    .portal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    /* Today summary cards */
+    .today-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 700px;
+    }
+    .today-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 2px 10px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .today-card-name { font-size: 0.82rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+    .today-card-val  { font-size: 1.4rem; font-weight: 900; }
+    .today-card-sub  { font-size: 0.8rem; color: var(--text-light); }
+
+    /* Missed facts section */
+    .missed-section {
+      width: 100%;
+      max-width: 700px;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 10px var(--shadow);
+      padding: 20px;
+    }
+    .missed-section h3 { font-size: 1rem; font-weight: 800; margin-bottom: 12px; }
+    .missed-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* Tabs */
+    .tab-panel { width: 100%; max-width: 700px; }
+    .tab-panel.hidden { display: none; }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <main class="portal-page">
+
+    <!-- Login form (shown when not authenticated) -->
+    <div id="loginSection" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:24px; padding-top:40px;">
+      <div style="text-align:center;">
+        <div class="portal-title">Parent Portal</div>
+        <div class="portal-subtitle">Maya's Daily Games</div>
+      </div>
+      <div class="login-card">
+        <h2>Sign in</h2>
+        <div class="field">
+          <label for="emailInput">Email</label>
+          <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Password">
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()" style="width:100%">Sign in</button>
+      </div>
+      <a href="index.html" style="color:var(--text-light); font-size:0.82rem;">&#8592; Back to games</a>
+    </div>
+
+    <!-- Portal content (shown when authenticated) -->
+    <div id="portalSection" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; gap:24px;">
+
+      <div class="portal-header-row">
+        <div>
+          <div class="portal-title">Parent Portal</div>
+          <div class="portal-subtitle">Maya's Daily Games</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Sign out</button>
+      </div>
+
+      <!-- Today at a glance -->
+      <div style="width:100%; max-width:700px;">
+        <div class="section-title" id="todayTitle">Loading...</div>
+        <div class="today-grid" id="todayGrid"></div>
+      </div>
+
+      <!-- Missed facts (from details JSON) -->
+      <div class="missed-section" id="missedSection">
+        <h3>Facts to practice</h3>
+        <div class="missed-grid" id="missedGrid">
+          <span style="color:var(--text-light); font-size:0.88rem;">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Tab navigation -->
+      <div class="portal-nav">
+        <button class="tab-btn active" onclick="showTab('byDay')">By Day</button>
+        <button class="tab-btn" onclick="showTab('byGame')">By Game</button>
+        <button class="tab-btn" onclick="showTab('facts')">Fact History</button>
+      </div>
+
+      <!-- By Day tab -->
+      <div class="tab-panel" id="tab-byDay">
+        <div id="byDayContent">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+
+      <!-- By Game tab -->
+      <div class="tab-panel hidden" id="tab-byGame">
+        <div id="byGameContent">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Fact History tab -->
+      <div class="tab-panel hidden" id="tab-facts">
+        <div id="factsContent">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/seed.js"></script>
+  <script>
+    const db = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const GAME_LABELS = {
+      facts:      'Daily Facts',
+      make_ten:   'Make a Ten',
+      shut_box:   'Shut the Box',
+      dice_flash: 'Dice Flash',
+    };
+
+    // ── Auth ──────────────────────────────────────────────────────────────
+    async function doLogin() {
+      const email    = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+      const errEl    = document.getElementById('loginError');
+      const btn      = document.getElementById('loginBtn');
+
+      if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+
+      btn.textContent = 'Signing in...';
+      btn.disabled = true;
+      errEl.textContent = '';
+
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      btn.textContent = 'Sign in';
+      btn.disabled = false;
+
+      if (error) {
+        errEl.textContent = error.message || 'Sign-in failed.';
+      }
+      // Session change handled by onAuthStateChange below
+    }
+
+    document.getElementById('passwordInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    async function doLogout() {
+      await db.auth.signOut();
+    }
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('portalSection').classList.remove('hidden');
+        loadData();
+      } else {
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('portalSection').classList.add('hidden');
+      }
+    });
+
+    // ── Data loading ──────────────────────────────────────────────────────
+    let allRows = []; // all results, deduped
+
+    async function loadData() {
+      // Fetch all results for maya, newest first
+      const { data, error } = await db
+        .from('results')
+        .select('*')
+        .eq('child', window.CHILD_NAME || 'maya')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('loadData error:', error.message);
+        return;
+      }
+
+      // Deduplicate: keep latest row per (game, play_date)
+      const seen = new Set();
+      allRows = (data || []).filter(row => {
+        const key = `${row.game}|${row.play_date}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      renderToday();
+      renderMissedFacts();
+      renderByDay();
+      renderByGame();
+      renderFactHistory();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function scoreClass(score, total, game) {
+      // shut_box: lower remaining = better; 0 = perfect
+      if (game === 'shut_box') {
+        if (score === 0) return 'perfect';
+        if (score <= 10) return 'good';
+        return 'needs';
+      }
+      const pct = total > 0 ? score / total : 0;
+      if (pct === 1) return 'perfect';
+      if (pct >= 0.7) return 'good';
+      return 'needs';
+    }
+
+    function scoreLabel(row) {
+      if (row.game === 'shut_box') {
+        return row.score === 0 ? 'Box shut! ✓' : `${row.score} left`;
+      }
+      return `${row.score}/${row.total}`;
+    }
+
+    function formatDate(isoDate) {
+      const d = new Date(isoDate + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    // ── Today summary ─────────────────────────────────────────────────────
+    function renderToday() {
+      const today = todayISO();
+      const todayRows = allRows.filter(r => r.play_date === today);
+      const grid = document.getElementById('todayGrid');
+      const title = document.getElementById('todayTitle');
+
+      title.textContent = `Today — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`;
+
+      const games = ['facts', 'make_ten', 'shut_box', 'dice_flash'];
+      if (todayRows.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1; padding:20px;">No games played yet today.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      games.forEach(game => {
+        const row = todayRows.find(r => r.game === game);
+        const card = document.createElement('div');
+        card.className = 'today-card';
+        if (row) {
+          const cls = scoreClass(row.score, row.total, game);
+          card.innerHTML = `
+            <div class="today-card-name">${GAME_LABELS[game]}</div>
+            <div class="today-card-val"><span class="score-pill ${cls}">${scoreLabel(row)}</span></div>
+            <div class="today-card-sub">${row.game === 'shut_box' ? 'tiles remaining' : 'correct'}</div>
+          `;
+        } else {
+          card.innerHTML = `
+            <div class="today-card-name">${GAME_LABELS[game]}</div>
+            <div class="today-card-val" style="color:var(--border)">—</div>
+            <div class="today-card-sub">not played</div>
+          `;
+        }
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Missed facts ──────────────────────────────────────────────────────
+    function renderMissedFacts() {
+      // Tally per fact: how many times missed vs correct across all sessions
+      const factStats = {}; // { "7 + 3": { correct: n, missed: n } }
+
+      allRows
+        .filter(r => r.game === 'facts' && Array.isArray(r.details))
+        .forEach(row => {
+          row.details.forEach(d => {
+            if (!factStats[d.fact]) factStats[d.fact] = { correct: 0, missed: 0 };
+            if (d.correct) factStats[d.fact].correct++;
+            else factStats[d.fact].missed++;
+          });
+        });
+
+      const grid = document.getElementById('missedGrid');
+
+      const struggled = Object.entries(factStats)
+        .filter(([, s]) => s.missed > s.correct) // more misses than hits
+        .sort(([, a], [, b]) => b.missed - a.missed);
+
+      const mastered = Object.entries(factStats)
+        .filter(([, s]) => s.missed === 0 && s.correct >= 2)
+        .sort(([a], [b]) => a.localeCompare(b));
+
+      if (struggled.length === 0 && mastered.length === 0) {
+        grid.innerHTML = '<span style="color:var(--text-light); font-size:0.88rem;">No data yet — facts history will appear here after a few sessions.</span>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      if (struggled.length > 0) {
+        const label = document.createElement('div');
+        label.style.cssText = 'width:100%; font-size:0.82rem; font-weight:700; color:var(--wrong); margin-bottom:4px;';
+        label.textContent = 'Still working on:';
+        grid.appendChild(label);
+        struggled.forEach(([fact]) => {
+          const chip = document.createElement('span');
+          chip.className = 'fact-chip';
+          chip.textContent = fact;
+          grid.appendChild(chip);
+        });
+      }
+      if (mastered.length > 0) {
+        const label = document.createElement('div');
+        label.style.cssText = 'width:100%; font-size:0.82rem; font-weight:700; color:var(--correct); margin-top:10px; margin-bottom:4px;';
+        label.textContent = 'Mastered:';
+        grid.appendChild(label);
+        mastered.forEach(([fact]) => {
+          const chip = document.createElement('span');
+          chip.className = 'fact-chip mastered';
+          chip.textContent = fact;
+          grid.appendChild(chip);
+        });
+      }
+    }
+
+    // ── By Day ────────────────────────────────────────────────────────────
+    function renderByDay() {
+      // Group by play_date
+      const byDate = {};
+      allRows.forEach(row => {
+        if (!byDate[row.play_date]) byDate[row.play_date] = [];
+        byDate[row.play_date].push(row);
+      });
+
+      const dates = Object.keys(byDate).sort().reverse().slice(0, 30);
+      const el = document.getElementById('byDayContent');
+
+      if (dates.length === 0) {
+        el.innerHTML = '<div class="empty-state">No results yet.</div>';
+        return;
+      }
+
+      const rows = dates.map(date => {
+        const dayRows = byDate[date];
+        const cells = ['facts','make_ten','shut_box','dice_flash'].map(game => {
+          const r = dayRows.find(row => row.game === game);
+          if (!r) return `<td style="color:var(--border)">—</td>`;
+          const cls = scoreClass(r.score, r.total, game);
+          return `<td><span class="score-pill ${cls}">${scoreLabel(r)}</span></td>`;
+        }).join('');
+        return `<tr><td><strong>${formatDate(date)}</strong></td>${cells}</tr>`;
+      }).join('');
+
+      el.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Facts</th>
+              <th>Make a Ten</th>
+              <th>Shut the Box</th>
+              <th>Dice Flash</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    // ── By Game ───────────────────────────────────────────────────────────
+    function renderByGame() {
+      const games = ['facts','make_ten','shut_box','dice_flash'];
+      const el = document.getElementById('byGameContent');
+
+      const sections = games.map(game => {
+        const gameRows = allRows
+          .filter(r => r.game === game)
+          .sort((a,b) => b.play_date.localeCompare(a.play_date))
+          .slice(0, 20);
+
+        if (gameRows.length === 0) return '';
+
+        const tableRows = gameRows.map(r => {
+          const cls = scoreClass(r.score, r.total, game);
+          return `<tr>
+            <td>${formatDate(r.play_date)}</td>
+            <td><span class="score-pill ${cls}">${scoreLabel(r)}</span></td>
+          </tr>`;
+        }).join('');
+
+        return `
+          <div style="margin-bottom:24px;">
+            <div class="section-title">${GAME_LABELS[game]}</div>
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Result</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>`;
+      }).join('');
+
+      el.innerHTML = sections || '<div class="empty-state">No results yet.</div>';
+    }
+
+    // ── Fact History ──────────────────────────────────────────────────────
+    function renderFactHistory() {
+      const factsRows = allRows
+        .filter(r => r.game === 'facts')
+        .sort((a,b) => b.play_date.localeCompare(a.play_date))
+        .slice(0, 15);
+
+      const el = document.getElementById('factsContent');
+
+      if (factsRows.length === 0) {
+        el.innerHTML = '<div class="empty-state">No facts sessions yet.</div>';
+        return;
+      }
+
+      const sections = factsRows.map(row => {
+        const problems = Array.isArray(row.details) ? row.details : [];
+        const chips = problems.map(d => {
+          const cls = d.correct ? 'fact-chip mastered' : 'fact-chip';
+          return `<span class="${cls}">${d.fact} = ${d.answer}</span>`;
+        }).join('');
+        return `
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.88rem; font-weight:700; margin-bottom:6px;">
+              ${formatDate(row.play_date)} — <span class="score-pill ${scoreClass(row.score, row.total, 'facts')}">${row.score}/${row.total}</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px;">${chips}</div>
+          </div>`;
+      }).join('');
+
+      el.innerHTML = sections;
+    }
+
+    // ── Tab switching ─────────────────────────────────────────────────────
+    function showTab(name) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${name}`).classList.remove('hidden');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

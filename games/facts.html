@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Daily Facts — Maya's Games</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    :root { --accent: var(--facts-hue); }
+    .game-page { gap: 16px; }
+
+    /* Counter below the equation */
+    .counter { font-size: 0.85rem; color: var(--text-light); font-weight: 600; }
+
+    /* Equation row */
+    .equation {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+    }
+    .eq-num { font-size: 3rem; font-weight: 900; line-height: 1; }
+    .eq-op  { font-size: 2rem; font-weight: 700; color: var(--text-light); line-height: 1.2; }
+    .eq-ans {
+      min-width: 80px;
+      text-align: center;
+      font-size: 3rem;
+      font-weight: 900;
+      line-height: 1;
+      border-bottom: 4px solid var(--border);
+      color: var(--text);
+      padding: 0 4px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .eq-ans.has-value  { border-color: var(--accent); }
+    .eq-ans.correct    { border-color: var(--correct); color: var(--correct); }
+    .eq-ans.wrong      { border-color: var(--wrong);   color: var(--wrong); }
+
+    .hint-text {
+      font-size: 0.88rem;
+      color: var(--text-light);
+      text-align: center;
+      font-style: italic;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <main class="game-page">
+
+    <div class="game-header">
+      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <span class="game-title">Daily Facts</span>
+      <span class="counter" id="counter">1 / 10</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Question card -->
+    <div class="card" id="questionCard">
+      <div class="equation">
+        <span class="eq-num" id="numA"></span>
+        <span class="eq-op"  id="opSym"></span>
+        <span class="eq-num" id="numB"></span>
+        <span class="eq-op">=</span>
+        <span class="eq-ans" id="ansDisplay">&#8203;</span>
+      </div>
+
+      <div class="hint-text" id="hintText"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- Number pad -->
+    <div class="numpad" id="numpad">
+      <button class="numpad-btn" data-val="7">7</button>
+      <button class="numpad-btn" data-val="8">8</button>
+      <button class="numpad-btn" data-val="9">9</button>
+      <button class="numpad-btn" data-val="4">4</button>
+      <button class="numpad-btn" data-val="5">5</button>
+      <button class="numpad-btn" data-val="6">6</button>
+      <button class="numpad-btn" data-val="1">1</button>
+      <button class="numpad-btn" data-val="2">2</button>
+      <button class="numpad-btn" data-val="3">3</button>
+      <button class="numpad-btn del" data-val="del">&#9003;</button>
+      <button class="numpad-btn" data-val="0">0</button>
+      <button class="numpad-btn submit" id="submitBtn" data-val="submit">&#10003;</button>
+    </div>
+
+    <!-- Completion screen -->
+    <div class="card completion" id="completionCard">
+      <div class="completion-star">&#11088;</div>
+      <div class="completion-title">All done!</div>
+      <div class="completion-score" id="completionScore"></div>
+      <div id="missedFacts" style="text-align:center; line-height:2;"></div>
+      <button class="btn btn-primary mt-16" onclick="location.href='../index.html'">
+        Back to games
+      </button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/seed.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/completion.js"></script>
+  <script>
+    // ── Fact bank ──────────────────────────────────────────────────────────
+    // Targets bonds of 10, doubles, near-doubles, and their subtraction reverses.
+    // Each entry: { a, b, op }  where op is '+' or '-'
+    const FACT_BANK = [
+      // Bonds of 10
+      {a:1,b:9,op:'+'},{a:2,b:8,op:'+'},{a:3,b:7,op:'+'},{a:4,b:6,op:'+'},
+      {a:5,b:5,op:'+'},{a:6,b:4,op:'+'},{a:7,b:3,op:'+'},{a:8,b:2,op:'+'},
+      {a:9,b:1,op:'+'},
+      // Doubles
+      {a:2,b:2,op:'+'},{a:3,b:3,op:'+'},{a:4,b:4,op:'+'},{a:5,b:5,op:'+'},
+      {a:6,b:6,op:'+'},{a:7,b:7,op:'+'},
+      // Near-doubles
+      {a:3,b:4,op:'+'},{a:4,b:3,op:'+'},{a:4,b:5,op:'+'},{a:5,b:4,op:'+'},
+      {a:5,b:6,op:'+'},{a:6,b:5,op:'+'},{a:6,b:7,op:'+'},{a:7,b:6,op:'+'},
+      // Make-a-ten strategies
+      {a:8,b:4,op:'+'},{a:8,b:5,op:'+'},{a:8,b:6,op:'+'},{a:8,b:7,op:'+'},
+      {a:9,b:3,op:'+'},{a:9,b:4,op:'+'},{a:9,b:5,op:'+'},{a:9,b:6,op:'+'},
+      {a:7,b:5,op:'+'},{a:7,b:4,op:'+'},
+      // Subtraction (from 10)
+      {a:10,b:1,op:'-'},{a:10,b:2,op:'-'},{a:10,b:3,op:'-'},{a:10,b:4,op:'-'},
+      {a:10,b:5,op:'-'},{a:10,b:6,op:'-'},{a:10,b:7,op:'-'},{a:10,b:8,op:'-'},
+      {a:10,b:9,op:'-'},
+      // Subtraction reverses of doubles
+      {a:12,b:6,op:'-'},{a:14,b:7,op:'-'},{a:16,b:8,op:'-'},{a:18,b:9,op:'-'},
+      // Subtraction reverses of near-doubles
+      {a:7,b:3,op:'-'},{a:8,b:4,op:'-'},{a:9,b:4,op:'-'},{a:9,b:5,op:'-'},
+      {a:11,b:5,op:'-'},{a:11,b:6,op:'-'},{a:13,b:6,op:'-'},{a:13,b:7,op:'-'},
+    ];
+
+    const HINTS = {
+      // If we detect a pattern, show a gentle strategy hint
+      bond: (a,b,op) => op === '+' && a + b === 10 ? `${a} and ${b} are bonds of 10!` : null,
+      doubles: (a,b,op) => op === '+' && a === b ? `Doubles: ${a} + ${a}` : null,
+      nearDoubles: (a,b,op) => op === '+' && Math.abs(a-b) === 1 ? `Near double! (${Math.min(a,b)} + ${Math.min(a,b)} = ${Math.min(a,b)*2}, then +1)` : null,
+    };
+
+    function getHint(fact) {
+      for (const fn of Object.values(HINTS)) {
+        const h = fn(fact.a, fact.b, fact.op);
+        if (h) return h;
+      }
+      return '';
+    }
+
+    function answer(fact) {
+      return fact.op === '+' ? fact.a + fact.b : fact.a - fact.b;
+    }
+
+    function factLabel(fact) {
+      return `${fact.a} ${fact.op} ${fact.b}`;
+    }
+
+    // ── Setup today's 10 facts ─────────────────────────────────────────────
+    const rng = todayRNG(1);   // salt=1 for facts game
+    const todayFacts = seededPick(FACT_BANK, 10, rng);
+
+    const TOTAL = todayFacts.length;
+    let current = 0;
+    let typed = '';
+    let score = 0;
+    let waitingNext = false;
+    const details = [];
+
+    // ── DOM refs ───────────────────────────────────────────────────────────
+    const numA      = document.getElementById('numA');
+    const opSym     = document.getElementById('opSym');
+    const numB      = document.getElementById('numB');
+    const ansEl     = document.getElementById('ansDisplay');
+    const feedback  = document.getElementById('feedback');
+    const counter   = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const hintText  = document.getElementById('hintText');
+    const numpad    = document.getElementById('numpad');
+    const questionCard = document.getElementById('questionCard');
+    const completionCard = document.getElementById('completionCard');
+
+    function renderQuestion() {
+      const fact = todayFacts[current];
+      numA.textContent = fact.a;
+      opSym.textContent = fact.op;
+      numB.textContent = fact.b;
+      ansEl.textContent = '\u200B'; // zero-width space keeps height
+      ansEl.className = 'eq-ans';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      hintText.textContent = '';
+      typed = '';
+      waitingNext = false;
+      counter.textContent = `${current + 1} / ${TOTAL}`;
+      progressBar.style.width = `${(current / TOTAL) * 100}%`;
+    }
+
+    function submit() {
+      if (waitingNext) { advance(); return; }
+      if (typed === '') return;
+
+      const fact = todayFacts[current];
+      const correct = answer(fact);
+      const given = parseInt(typed, 10);
+      const isCorrect = given === correct;
+
+      details.push({ fact: factLabel(fact), answer: correct, given, correct: isCorrect });
+
+      if (isCorrect) {
+        score++;
+        ansEl.textContent = typed;
+        ansEl.className = 'eq-ans correct';
+        feedback.textContent = randomPraise();
+        feedback.className = 'feedback ok';
+        waitingNext = true;
+        setTimeout(advance, 900);
+      } else {
+        ansEl.textContent = typed;
+        ansEl.className = 'eq-ans wrong';
+        feedback.textContent = `Not quite — try again!`;
+        feedback.className = 'feedback err';
+        hintText.textContent = getHint(fact);
+        typed = '';
+        // Keep the wrong answer visible briefly, then clear
+        setTimeout(() => {
+          ansEl.textContent = '\u200B';
+          ansEl.className = 'eq-ans';
+        }, 600);
+      }
+    }
+
+    function advance() {
+      current++;
+      if (current >= TOTAL) {
+        finish();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finish() {
+      questionCard.classList.add('hidden');
+      numpad.classList.add('hidden');
+      completionCard.classList.add('visible');
+      progressBar.style.width = '100%';
+
+      document.getElementById('completionScore').textContent =
+        `${score} out of ${TOTAL} correct`;
+
+      // Show missed facts
+      const missed = details.filter(d => !d.correct);
+      if (missed.length > 0) {
+        const missedEl = document.getElementById('missedFacts');
+        missedEl.innerHTML = '<p style="font-size:0.88rem;color:var(--text-light);margin-bottom:6px;">Ones to practice:</p>' +
+          missed.map(d => `<span class="fact-chip">${d.fact} = ${d.answer}</span>`).join('');
+      }
+
+      markDone('facts', score, TOTAL);
+      saveResult({ game: 'facts', score, total: TOTAL, details });
+    }
+
+    // ── Numpad interaction ─────────────────────────────────────────────────
+    function handleDigit(val) {
+      if (waitingNext) return;
+      if (typed.length >= 2) return; // answers max 2 digits (up to 20)
+      typed += val;
+      ansEl.textContent = typed;
+      ansEl.className = 'eq-ans has-value';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+    }
+
+    function handleDel() {
+      if (waitingNext) return;
+      typed = typed.slice(0, -1);
+      ansEl.textContent = typed || '\u200B';
+      ansEl.className = typed ? 'eq-ans has-value' : 'eq-ans';
+    }
+
+    document.querySelectorAll('.numpad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.val;
+        if (v === 'del')    handleDel();
+        else if (v === 'submit') submit();
+        else handleDigit(v);
+      });
+    });
+
+    // Keyboard support
+    document.addEventListener('keydown', e => {
+      if (e.key >= '0' && e.key <= '9') handleDigit(e.key);
+      else if (e.key === 'Backspace') handleDel();
+      else if (e.key === 'Enter')     submit();
+    });
+
+    // ── Praise phrases ─────────────────────────────────────────────────────
+    const PRAISE = ['Great!', 'Yes!', 'Correct!', 'Nice one!', 'Got it!', 'Brilliant!', 'Spot on!'];
+    let praiseIdx = 0;
+    function randomPraise() {
+      // Cycle through in a shuffled order rather than randomly, to avoid repeats
+      if (praiseIdx >= PRAISE.length) praiseIdx = 0;
+      return PRAISE[praiseIdx++];
+    }
+
+    // ── Start ──────────────────────────────────────────────────────────────
+    renderQuestion();
+  </script>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dice Flash — Maya's Games</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    :root { --accent: var(--flash-hue); }
+    .game-page { gap: 20px; }
+
+    .flash-wrapper {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* The flash display area */
+    .flash-display {
+      width: 220px;
+      height: 220px;
+      border-radius: 20px;
+      background: #fff;
+      border: 3px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: opacity 0.15s;
+      cursor: pointer;
+    }
+    .flash-display.covered { opacity: 0; pointer-events: none; }
+    .flash-display.covered::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--cream);
+      border-radius: 17px;
+    }
+
+    /* Ten-frame grid (2 rows × 5 cols) */
+    .ten-frame {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 10px;
+      padding: 22px;
+      width: 100%;
+      height: 100%;
+    }
+    .ten-cell {
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      background: transparent;
+      transition: background 0.1s;
+    }
+    .ten-cell.filled {
+      background: var(--accent);
+      border-color: transparent;
+    }
+
+    /* Dice dot pattern (for 1-6) */
+    .dice-grid {
+      display: grid;
+      width: 160px;
+      height: 160px;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 18px;
+      gap: 6px;
+    }
+    .dice-dot {
+      border-radius: 50%;
+      background: var(--text);
+      width: 22px;
+      height: 22px;
+      align-self: center;
+      justify-self: center;
+    }
+    .dice-dot.invisible { visibility: hidden; }
+
+    .flash-prompt {
+      font-size: 1rem;
+      color: var(--text-light);
+      font-weight: 600;
+      text-align: center;
+      min-height: 24px;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .choice-btn { padding: 22px 12px; font-size: 2.2rem; }
+
+    .tap-hint {
+      font-size: 0.88rem;
+      color: var(--text-light);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <main class="game-page">
+
+    <div class="game-header">
+      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <span class="game-title">Dice Flash</span>
+      <span style="font-size:0.85rem; color:var(--text-light); font-weight:600;" id="counter">1 / 8</span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <div class="flash-wrapper">
+      <div class="flash-prompt" id="flashPrompt">Tap the display to see the pattern</div>
+
+      <!-- The flashable display -->
+      <div class="flash-display covered" id="flashDisplay"></div>
+
+      <div class="feedback" id="feedback"></div>
+      <div class="tap-hint" id="tapHint">tap to reveal</div>
+
+      <!-- Answer choices — hidden until after flash -->
+      <div class="choices hidden" id="choices"></div>
+    </div>
+
+    <!-- Completion -->
+    <div class="card completion" id="completionCard">
+      <div class="completion-star">&#127775;</div>
+      <div class="completion-title">All done!</div>
+      <div class="completion-score" id="completionScore"></div>
+      <button class="btn btn-primary mt-16" onclick="location.href='../index.html'">
+        Back to games
+      </button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/seed.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/completion.js"></script>
+  <script>
+    // Dice dot layout: 9 cells (3×3), indices 0-8
+    // Position map: cell 0=top-left, 1=top-center, 2=top-right,
+    //               3=mid-left,  4=center,    5=mid-right,
+    //               6=bot-left,  7=bot-center, 8=bot-right
+    const DICE_PATTERNS = {
+      1: [4],
+      2: [0, 8],
+      3: [0, 4, 8],
+      4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8],
+      6: [0, 2, 3, 5, 6, 8],
+    };
+
+    function buildDicePattern(n) {
+      const grid = document.createElement('div');
+      grid.className = 'dice-grid';
+      const dots = DICE_PATTERNS[n];
+      for (let i = 0; i < 9; i++) {
+        const dot = document.createElement('div');
+        dot.className = dots.includes(i) ? 'dice-dot' : 'dice-dot invisible';
+        grid.appendChild(dot);
+      }
+      return grid;
+    }
+
+    function buildTenFrame(n) {
+      const frame = document.createElement('div');
+      frame.className = 'ten-frame';
+      for (let i = 0; i < 10; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'ten-cell' + (i < n ? ' filled' : '');
+        frame.appendChild(cell);
+      }
+      return frame;
+    }
+
+    function buildPattern(n) {
+      // Use dice layout for 1-6, ten-frame for 7-10
+      return n <= 6 ? buildDicePattern(n) : buildTenFrame(n);
+    }
+
+    // ── Game state ────────────────────────────────────────────────────────
+    const TOTAL = 8;
+    const FLASH_DURATION_MS = 1500; // how long the pattern is visible
+
+    const rng = todayRNG(4); // salt=4 for dice-flash
+
+    // Generate 8 random counts 1-10, seeded
+    const todayCounts = Array.from({ length: TOTAL }, () => seededInt(1, 10, rng));
+
+    let current = 0;
+    let score = 0;
+    let locked = false;
+    let revealed = false;
+    const details = [];
+
+    const counterEl    = document.getElementById('counter');
+    const progressBar  = document.getElementById('progressBar');
+    const flashDisplay = document.getElementById('flashDisplay');
+    const flashPrompt  = document.getElementById('flashPrompt');
+    const feedbackEl   = document.getElementById('feedback');
+    const tapHint      = document.getElementById('tapHint');
+    const choicesEl    = document.getElementById('choices');
+    const completionCard = document.getElementById('completionCard');
+
+    function renderQuestion() {
+      const n = todayCounts[current];
+      locked = false;
+      revealed = false;
+
+      counterEl.textContent = `${current + 1} / ${TOTAL}`;
+      progressBar.style.width = `${(current / TOTAL) * 100}%`;
+      feedbackEl.textContent = '';
+      feedbackEl.className = 'feedback';
+
+      // Pre-load pattern but cover it
+      flashDisplay.innerHTML = '';
+      flashDisplay.appendChild(buildPattern(n));
+      flashDisplay.classList.add('covered');
+      flashDisplay.style.opacity = '';
+
+      flashPrompt.textContent = 'Tap to see the pattern';
+      tapHint.classList.remove('hidden');
+      choicesEl.classList.add('hidden');
+      choicesEl.innerHTML = '';
+
+      // Enable tap to reveal
+      flashDisplay.style.pointerEvents = 'auto';
+      flashDisplay.onclick = () => revealFlash(n);
+    }
+
+    function revealFlash(n) {
+      if (revealed) return;
+      revealed = true;
+      flashDisplay.onclick = null;
+      flashDisplay.classList.remove('covered');
+      flashDisplay.style.opacity = '1';
+      flashPrompt.textContent = 'How many dots?';
+      tapHint.classList.add('hidden');
+
+      setTimeout(() => {
+        flashDisplay.classList.add('covered');
+        showChoices(n);
+      }, FLASH_DURATION_MS);
+    }
+
+    function showChoices(n) {
+      const wrongs = wrongChoices(n, 3);
+      const all = seededShuffle([n, ...wrongs], rng);
+
+      choicesEl.innerHTML = '';
+      all.forEach(val => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = val;
+        btn.addEventListener('click', () => handleChoice(val, n, btn));
+        choicesEl.appendChild(btn);
+      });
+      choicesEl.classList.remove('hidden');
+    }
+
+    function wrongChoices(correct, count) {
+      const pool = [];
+      for (let x = 1; x <= 10; x++) {
+        if (x !== correct) pool.push(x);
+      }
+      pool.sort((a,b) => Math.abs(a-correct) - Math.abs(b-correct));
+      return seededShuffle(pool.slice(0, count + 2), rng).slice(0, count);
+    }
+
+    function handleChoice(val, correct, btn) {
+      if (locked) return;
+      locked = true;
+
+      const isCorrect = val === correct;
+      details.push({ count: correct, given: val, correct: isCorrect });
+
+      // Show correct answer
+      document.querySelectorAll('.choice-btn').forEach(b => {
+        if (parseInt(b.textContent, 10) === correct) b.classList.add('correct-choice');
+        else if (b === btn && !isCorrect) b.classList.add('wrong-choice');
+      });
+
+      // Un-cover display to confirm count
+      flashDisplay.classList.remove('covered');
+
+      if (isCorrect) {
+        score++;
+        feedbackEl.textContent = 'Yes!';
+        feedbackEl.className = 'feedback ok';
+      } else {
+        feedbackEl.textContent = `It was ${correct} — look again!`;
+        feedbackEl.className = 'feedback err';
+      }
+
+      setTimeout(advance, 1200);
+    }
+
+    function advance() {
+      current++;
+      if (current >= TOTAL) {
+        finish();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finish() {
+      document.querySelector('.flash-wrapper').classList.add('hidden');
+      completionCard.classList.add('visible');
+      progressBar.style.width = '100%';
+      document.getElementById('completionScore').textContent =
+        `${score} out of ${TOTAL} correct`;
+      markDone('dice_flash', score, TOTAL);
+      saveResult({ game: 'dice_flash', score, total: TOTAL, details });
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>
