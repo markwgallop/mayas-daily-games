@@ -29,6 +29,19 @@ function getClient() {
  * @param {Object} result.details  - game-specific per-problem data (stored as jsonb)
  * @returns {Promise<void>}
  */
+async function fetchBand() {
+  try {
+    const { data } = await getClient()
+      .from('settings')
+      .select('value')
+      .eq('key', 'facts_band')
+      .single();
+    return data ? parseInt(data.value, 10) : (window.DAILY_FACTS_BAND || 1);
+  } catch {
+    return window.DAILY_FACTS_BAND || 1;
+  }
+}
+
 async function saveResult(result) {
   const db = getClient();
   const row = {

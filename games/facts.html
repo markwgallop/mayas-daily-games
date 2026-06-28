@@ -109,10 +109,8 @@
   <script src="../js/completion.js"></script>
   <script>
     // ── Fact pool ─────────────────────────────────────────────────────────
-    // Pool is scoped to DAILY_FACTS_BAND from config.js.
-    // Bump that value to advance Maya to the next difficulty level.
-    // Each entry: { a, b, op }  where op is '+' or '-'
-    const BAND = window.DAILY_FACTS_BAND || 1;
+    // Band is fetched from Supabase settings on load; falls back to config.js default.
+    let BAND, FACT_BANK, todayFacts, TOTAL, maxDigits;
 
     function buildBandPool(band) {
       const pool = [];
@@ -151,8 +149,6 @@
       return pool;
     }
 
-    const FACT_BANK = buildBandPool(BAND);
-
     const HINTS = {
       // If we detect a pattern, show a gentle strategy hint
       bond: (a,b,op) => op === '+' && a + b === 10 ? `${a} and ${b} are bonds of 10!` : null,
@@ -176,17 +172,12 @@
       return `${fact.a} ${fact.op} ${fact.b}`;
     }
 
-    // ── Setup today's 10 facts ─────────────────────────────────────────────
-    const rng = todayRNG(BAND * 997);  // seed varies per (date, band)
-    const maxDigits = BAND === 5 ? 3 : 2;
-    const todayFacts = seededPick(FACT_BANK, 10, rng);
-
-    const TOTAL = todayFacts.length;
+    // ── Setup today's 10 facts (async — band comes from Supabase) ──────────
     let current = 0;
     let typed = '';
     let score = 0;
     let waitingNext = false;
-    const details = [];
+    let details = [];
 
     // ── DOM refs ───────────────────────────────────────────────────────────
     const numA      = document.getElementById('numA');
@@ -325,7 +316,15 @@
     }
 
     // ── Start ──────────────────────────────────────────────────────────────
-    renderQuestion();
+    (async function() {
+      BAND       = await fetchBand();
+      FACT_BANK  = buildBandPool(BAND);
+      const rng  = todayRNG(BAND * 997);  // seed varies per (date, band)
+      maxDigits  = BAND === 5 ? 3 : 2;
+      todayFacts = seededPick(FACT_BANK, 10, rng);
+      TOTAL      = todayFacts.length;
+      renderQuestion();
+    })();
   </script>
 </body>
 </html>

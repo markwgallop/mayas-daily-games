@@ -211,18 +211,17 @@
       await db.auth.signOut();
     }
 
-    function saveBand() {
+    async function saveBand() {
       const val = document.getElementById('bandSelect').value;
-      localStorage.setItem('facts_band', val);
+      await db.from('settings').upsert({ key: 'facts_band', value: val });
     }
 
-    db.auth.onAuthStateChange((event, session) => {
+    db.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('portalSection').classList.remove('hidden');
-        // Seed selector from localStorage (falls back to build-time default)
-        const stored = localStorage.getItem('facts_band') || String(window.DAILY_FACTS_BAND || 1);
-        document.getElementById('bandSelect').value = stored;
+        const { data } = await db.from('settings').select('value').eq('key', 'facts_band').single();
+        document.getElementById('bandSelect').value = data ? data.value : String(window.DAILY_FACTS_BAND || 1);
         loadData();
       } else {
         document.getElementById('loginSection').classList.remove('hidden');

@@ -16,5 +16,3 @@ window.CHILD_NAME = 'maya';
 // 1=Foundations (sum≤10)  2=Make-a-ten (sum 11-20)  3=All addition to 20
 // 4=Add & subtract to 20  5=Within 100
 window.DAILY_FACTS_BAND = 1;
-// Parent portal can override this via localStorage
-(function() { const s = localStorage.getItem('facts_band'); if (s) window.DAILY_FACTS_BAND = parseInt(s, 10); })();
