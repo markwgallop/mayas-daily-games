@@ -11,7 +11,7 @@
 
 [build]
   publish = "."
-  command = "sed -i \"s|YOUR_SUPABASE_URL|$SUPABASE_DATABASE_URL|g; s|YOUR_SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g\" js/config.js"
+  command = "sed -i \"s|YOUR_SUPABASE_URL|$SUPABASE_DATABASE_URL|g; s|YOUR_SUPABASE_ANON_KEY|$SUPABASE_ANON_KEY|g; s|DAILY_FACTS_BAND = 1|DAILY_FACTS_BAND = ${DAILY_FACTS_BAND:-1}|g\" js/config.js"
 
 # Security headers
 [[headers]]
