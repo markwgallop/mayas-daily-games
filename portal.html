@@ -29,6 +29,25 @@
       max-width: 700px;
     }
 
+    .db-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #9ca3af;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .db-dot.connected {
+      background: #22c55e;
+      animation: db-glow 2s ease-in-out infinite;
+    }
+    .db-dot.disconnected { background: #ef4444; }
+
+    @keyframes db-glow {
+      0%, 100% { box-shadow: 0 0 4px 3px rgba(34,197,94,0.5); }
+      50%       { box-shadow: 0 0 8px 5px rgba(34,197,94,0.2); }
+    }
+
     /* Today summary cards */
     .today-grid {
       display: grid;
@@ -107,7 +126,10 @@
           <div class="portal-title">Parent Portal</div>
           <div class="portal-subtitle">Maya's Daily Games</div>
         </div>
-        <button class="logout-btn" onclick="doLogout()">Sign out</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="db-dot" id="dbDot" title="Database connection"></span>
+          <button class="logout-btn" onclick="doLogout()">Sign out</button>
+        </div>
       </div>
 
       <!-- Difficulty band -->
@@ -220,7 +242,9 @@
       if (session) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('portalSection').classList.remove('hidden');
-        const { data } = await db.from('settings').select('value').eq('key', 'facts_band').single();
+        const { data, error: settingsErr } = await db.from('settings').select('value').eq('key', 'facts_band').single();
+        const dot = document.getElementById('dbDot');
+        dot.className = settingsErr ? 'db-dot disconnected' : 'db-dot connected';
         document.getElementById('bandSelect').value = data ? data.value : String(window.DAILY_FACTS_BAND || 1);
         loadData();
       } else {
