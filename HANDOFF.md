@@ -105,13 +105,14 @@ curl 'https://YOUR_PROJECT.supabase.co/rest/v1/results?select=*' \
 
 ## What remains: Netlify deploy (human clicks)
 
-1. Push `maya-games/` to a new GitHub repo (separate from HomePi)
-2. Netlify → Add new site → Import from Git → pick the repo
-3. Build settings are already in `netlify.toml` — no changes needed
-4. Set environment variables in the Netlify UI:
+Repo is live at: **https://github.com/markwgallop/mayas-daily-games**
+
+1. Netlify → Add new site → Import from Git → pick `markwgallop/mayas-daily-games`
+2. Build settings are already in `netlify.toml` — no changes needed
+3. Set environment variables in the Netlify UI:
    - `SUPABASE_URL` = your project URL
    - `SUPABASE_ANON_KEY` = your anon key
-5. Trigger a deploy and test
+4. Trigger a deploy and test
 
 ---
 
