@@ -242,10 +242,19 @@
       if (session) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('portalSection').classList.remove('hidden');
-        const { data, error: settingsErr } = await db.from('settings').select('value').eq('key', 'facts_band').single();
         const dot = document.getElementById('dbDot');
-        dot.className = settingsErr ? 'db-dot disconnected' : 'db-dot connected';
-        document.getElementById('bandSelect').value = data ? data.value : String(window.DAILY_FACTS_BAND || 1);
+        try {
+          const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000));
+          const { data, error: settingsErr } = await Promise.race([
+            db.from('settings').select('value').eq('key', 'facts_band').single(),
+            timeout
+          ]);
+          dot.className = settingsErr ? 'db-dot disconnected' : 'db-dot connected';
+          document.getElementById('bandSelect').value = data ? data.value : String(window.DAILY_FACTS_BAND || 1);
+        } catch (e) {
+          console.error('settings fetch failed:', e.message);
+          dot.className = 'db-dot disconnected';
+        }
         loadData();
       } else {
         document.getElementById('loginSection').classList.remove('hidden');
