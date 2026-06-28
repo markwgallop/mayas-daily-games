@@ -108,34 +108,50 @@
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
   <script>
-    // ── Fact bank ──────────────────────────────────────────────────────────
-    // Targets bonds of 10, doubles, near-doubles, and their subtraction reverses.
+    // ── Fact pool ─────────────────────────────────────────────────────────
+    // Pool is scoped to DAILY_FACTS_BAND from config.js.
+    // Bump that value to advance Maya to the next difficulty level.
     // Each entry: { a, b, op }  where op is '+' or '-'
-    const FACT_BANK = [
-      // Bonds of 10
-      {a:1,b:9,op:'+'},{a:2,b:8,op:'+'},{a:3,b:7,op:'+'},{a:4,b:6,op:'+'},
-      {a:5,b:5,op:'+'},{a:6,b:4,op:'+'},{a:7,b:3,op:'+'},{a:8,b:2,op:'+'},
-      {a:9,b:1,op:'+'},
-      // Doubles
-      {a:2,b:2,op:'+'},{a:3,b:3,op:'+'},{a:4,b:4,op:'+'},{a:5,b:5,op:'+'},
-      {a:6,b:6,op:'+'},{a:7,b:7,op:'+'},
-      // Near-doubles
-      {a:3,b:4,op:'+'},{a:4,b:3,op:'+'},{a:4,b:5,op:'+'},{a:5,b:4,op:'+'},
-      {a:5,b:6,op:'+'},{a:6,b:5,op:'+'},{a:6,b:7,op:'+'},{a:7,b:6,op:'+'},
-      // Make-a-ten strategies
-      {a:8,b:4,op:'+'},{a:8,b:5,op:'+'},{a:8,b:6,op:'+'},{a:8,b:7,op:'+'},
-      {a:9,b:3,op:'+'},{a:9,b:4,op:'+'},{a:9,b:5,op:'+'},{a:9,b:6,op:'+'},
-      {a:7,b:5,op:'+'},{a:7,b:4,op:'+'},
-      // Subtraction (from 10)
-      {a:10,b:1,op:'-'},{a:10,b:2,op:'-'},{a:10,b:3,op:'-'},{a:10,b:4,op:'-'},
-      {a:10,b:5,op:'-'},{a:10,b:6,op:'-'},{a:10,b:7,op:'-'},{a:10,b:8,op:'-'},
-      {a:10,b:9,op:'-'},
-      // Subtraction reverses of doubles
-      {a:12,b:6,op:'-'},{a:14,b:7,op:'-'},{a:16,b:8,op:'-'},{a:18,b:9,op:'-'},
-      // Subtraction reverses of near-doubles
-      {a:7,b:3,op:'-'},{a:8,b:4,op:'-'},{a:9,b:4,op:'-'},{a:9,b:5,op:'-'},
-      {a:11,b:5,op:'-'},{a:11,b:6,op:'-'},{a:13,b:6,op:'-'},{a:13,b:7,op:'-'},
-    ];
+    const BAND = window.DAILY_FACTS_BAND || 1;
+
+    function buildBandPool(band) {
+      const pool = [];
+      if (band <= 1) {
+        // Band 1 — Foundations: addition, both addends 0–10, sum ≤ 10
+        for (let a = 0; a <= 10; a++)
+          for (let b = 0; b <= 10 - a; b++)
+            pool.push({ a, b, op: '+' });
+      } else if (band === 2) {
+        // Band 2 — Make-a-ten: addition, sum 11–20, crossing ten
+        for (let a = 1; a <= 10; a++)
+          for (let b = 1; b <= 10; b++)
+            if (a + b >= 11 && a + b <= 20) pool.push({ a, b, op: '+' });
+      } else if (band === 3) {
+        // Band 3 — All addition to 20
+        for (let a = 0; a <= 10; a++)
+          for (let b = 0; b <= 10; b++)
+            pool.push({ a, b, op: '+' });
+      } else if (band === 4) {
+        // Band 4 — Add & subtract to 20
+        for (let a = 0; a <= 10; a++)
+          for (let b = 0; b <= 10; b++)
+            pool.push({ a, b, op: '+' });
+        for (let a = 1; a <= 20; a++)
+          for (let b = 1; b <= a; b++)
+            pool.push({ a, b, op: '-' });
+      } else {
+        // Band 5 — Within 100
+        for (let a = 10; a <= 90; a++)
+          for (let b = 1; b <= 20; b++)
+            if (a + b <= 100) pool.push({ a, b, op: '+' });
+        for (let a = 11; a <= 100; a++)
+          for (let b = 1; b <= 20; b++)
+            if (a - b >= 0) pool.push({ a, b, op: '-' });
+      }
+      return pool;
+    }
+
+    const FACT_BANK = buildBandPool(BAND);
 
     const HINTS = {
       // If we detect a pattern, show a gentle strategy hint
@@ -161,7 +177,8 @@
     }
 
     // ── Setup today's 10 facts ─────────────────────────────────────────────
-    const rng = todayRNG(1);   // salt=1 for facts game
+    const rng = todayRNG(BAND * 997);  // seed varies per (date, band)
+    const maxDigits = BAND === 5 ? 3 : 2;
     const todayFacts = seededPick(FACT_BANK, 10, rng);
 
     const TOTAL = todayFacts.length;
@@ -261,13 +278,13 @@
       }
 
       markDone('facts', score, TOTAL);
-      saveResult({ game: 'facts', score, total: TOTAL, details });
+      saveResult({ game: 'facts', score, total: TOTAL, details: { band: BAND, questions: details } });
     }
 
     // ── Numpad interaction ─────────────────────────────────────────────────
     function handleDigit(val) {
       if (waitingNext) return;
-      if (typed.length >= 2) return; // answers max 2 digits (up to 20)
+      if (typed.length >= maxDigits) return;
       typed += val;
       ansEl.textContent = typed;
       ansEl.className = 'eq-ans has-value';

@@ -8,7 +8,7 @@
  * Value:       JSON stringified score object { score, total }
  */
 
-const GAME_IDS = ['facts', 'make_ten', 'shut_box', 'dice_flash'];
+const GAME_IDS = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
 
 function _storageKey(game, dateStr) {
   const child = window.CHILD_NAME || 'maya';

@@ -19,6 +19,7 @@
   --ten-hue:     #F5A623;   /* amber */
   --box-hue:     #5CB85C;   /* green */
   --flash-hue:   #9B59B6;   /* purple */
+  --war-hue:     #D64545;   /* red */
 
   /* UI */
   --radius:      16px;
@@ -144,6 +145,7 @@ a { text-decoration: none; color: inherit; }
 .tile.make-ten  { --tile-color: var(--ten-hue); }
 .tile.shut-box  { --tile-color: var(--box-hue); }
 .tile.dice-flash { --tile-color: var(--flash-hue); }
+.tile.war    { --tile-color: var(--war-hue); }
 
 /* ---------- Game container ---------- */
 .game-page {

@@ -64,6 +64,13 @@
         <div class="tile-score" id="score-dice_flash"></div>
       </a>
 
+      <a href="games/war.html" class="tile war" id="tile-war">
+        <div class="tile-icon">&#9829;</div>
+        <div class="tile-name">Card Duel</div>
+        <div class="tile-desc">Add your cards — beat the computer!</div>
+        <div class="tile-score" id="score-war"></div>
+      </a>
+
     </div>
 
     <a href="portal.html" style="color: var(--text-light); font-size:0.82rem; margin-top:8px;">
@@ -83,12 +90,13 @@
 
     // Restore completion state from localStorage
     const done = getAllDone();
-    const gameNames = { facts: 'facts', make_ten: 'make_ten', shut_box: 'shut_box', dice_flash: 'dice_flash' };
+    const gameNames = { facts: 'facts', make_ten: 'make_ten', shut_box: 'shut_box', dice_flash: 'dice_flash', war: 'war' };
     const scoreLabels = {
       facts:      (s, t) => `${s}/${t} correct`,
       make_ten:   (s, t) => `${s}/${t} correct`,
       shut_box:   (s, t) => `Score: ${s}`,   // s = remaining tiles (lower=better)
       dice_flash: (s, t) => `${s}/${t} correct`,
+      war:        (s, t) => `${s} rounds won`,
     };
 
     let allDone = true;

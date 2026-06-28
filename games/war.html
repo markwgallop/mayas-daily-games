@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Card Duel — Maya's Games</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    :root { --accent: var(--war-hue); }
+    .game-page { gap: 16px; }
+
+    /* Round score header */
+    .round-score {
+      font-size: 1.1rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .round-score .you  { color: var(--war-hue); }
+    .round-score .cpu  { color: var(--text-light); }
+
+    /* Card table */
+    .card-table {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+    }
+    .player-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .player-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+    }
+    .cards-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .playing-card {
+      width: 64px;
+      height: 88px;
+      border-radius: 10px;
+      background: #fff;
+      border: 3px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 900;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: border-color 0.2s;
+    }
+    .playing-card.face-down {
+      background: var(--war-hue);
+      border-color: transparent;
+      color: rgba(255,255,255,0.6);
+      font-size: 1.4rem;
+    }
+    .playing-card.win-flash {
+      border-color: var(--correct);
+    }
+
+    /* Equation row (child's cards) */
+    .equation {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+    .eq-num { font-size: 2.6rem; font-weight: 900; line-height: 1; }
+    .eq-op  { font-size: 1.8rem; font-weight: 700; color: var(--text-light); line-height: 1.2; }
+    .eq-ans {
+      min-width: 72px;
+      text-align: center;
+      font-size: 2.6rem;
+      font-weight: 900;
+      line-height: 1;
+      border-bottom: 4px solid var(--border);
+      color: var(--text);
+      padding: 0 4px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .eq-ans.has-value  { border-color: var(--accent); }
+    .eq-ans.correct    { border-color: var(--correct); color: var(--correct); }
+    .eq-ans.wrong      { border-color: var(--wrong);   color: var(--wrong); }
+
+    /* Mode toggle */
+    .mode-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      font-weight: 700;
+    }
+    .mode-btn {
+      padding: 6px 16px;
+      border-radius: 99px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .mode-btn.active {
+      background: var(--war-hue);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    /* Result reveal */
+    .result-reveal {
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-light);
+      min-height: 20px;
+    }
+
+    /* Next button */
+    .next-btn {
+      display: none;
+      padding: 14px 36px;
+      border-radius: 99px;
+      border: none;
+      background: var(--war-hue);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: filter 0.1s;
+    }
+    .next-btn.visible { display: inline-flex; }
+    .next-btn:active  { filter: brightness(0.9); }
+
+    /* Win banner inside completion */
+    .win-outcome { font-size: 1.4rem; font-weight: 900; }
+    .win-outcome.you-win { color: var(--correct); }
+    .win-outcome.cpu-win { color: var(--wrong); }
+  </style>
+</head>
+<body>
+  <main class="game-page">
+
+    <div class="game-header">
+      <button class="back-btn" onclick="history.back()">&#8592;</button>
+      <span class="game-title">Card Duel</span>
+      <span class="round-score" id="roundScore">
+        <span class="you">You 0</span> &mdash; <span class="cpu">CPU 0</span>
+      </span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Game card -->
+    <div class="card" id="gameCard">
+
+      <!-- Mode toggle -->
+      <div class="mode-row">
+        Mode:
+        <button class="mode-btn active" id="modeAdd" onclick="setMode('+')">Addition</button>
+        <button class="mode-btn" id="modeSub" onclick="setMode('-')">Subtraction</button>
+      </div>
+
+      <!-- Card table -->
+      <div class="card-table">
+        <div class="player-col">
+          <div class="player-label">Your cards</div>
+          <div class="cards-row">
+            <div class="playing-card" id="myCard1"></div>
+            <div class="playing-card" id="myCard2"></div>
+          </div>
+        </div>
+        <div class="player-col">
+          <div class="player-label">Computer</div>
+          <div class="cards-row">
+            <div class="playing-card face-down" id="cpuCard1">?</div>
+            <div class="playing-card face-down" id="cpuCard2">?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equation -->
+      <div class="equation" id="equationRow">
+        <span class="eq-num" id="numA"></span>
+        <span class="eq-op"  id="opSym"></span>
+        <span class="eq-num" id="numB"></span>
+        <span class="eq-op">=</span>
+        <span class="eq-ans" id="ansDisplay">&#8203;</span>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+      <div class="result-reveal" id="resultReveal"></div>
+
+      <button class="next-btn" id="nextBtn" onclick="nextRound()">Next round &#8594;</button>
+
+    </div>
+
+    <!-- Number pad -->
+    <div class="numpad" id="numpad">
+      <button class="numpad-btn" data-val="7">7</button>
+      <button class="numpad-btn" data-val="8">8</button>
+      <button class="numpad-btn" data-val="9">9</button>
+      <button class="numpad-btn" data-val="4">4</button>
+      <button class="numpad-btn" data-val="5">5</button>
+      <button class="numpad-btn" data-val="6">6</button>
+      <button class="numpad-btn" data-val="1">1</button>
+      <button class="numpad-btn" data-val="2">2</button>
+      <button class="numpad-btn" data-val="3">3</button>
+      <button class="numpad-btn del" data-val="del">&#9003;</button>
+      <button class="numpad-btn" data-val="0">0</button>
+      <button class="numpad-btn submit" id="submitBtn" data-val="submit">&#10003;</button>
+    </div>
+
+    <!-- Completion screen -->
+    <div class="card completion" id="completionCard">
+      <div class="completion-star" id="completionStar">&#11088;</div>
+      <div class="win-outcome" id="winOutcome"></div>
+      <div class="completion-score" id="completionScore"></div>
+      <button class="btn btn-primary mt-16" onclick="location.href='../index.html'">
+        Back to games
+      </button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/seed.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="../js/completion.js"></script>
+  <script>
+    // ── Constants ──────────────────────────────────────────────────────────
+    const TARGET_WINS = 7;   // first player to this many round wins ends the game
+
+    // ── State ──────────────────────────────────────────────────────────────
+    const rng = todayRNG(500);   // salt=500 for war game
+    let op = '+';
+    let myWins = 0;
+    let cpuWins = 0;
+    let totalRounds = 0;
+    let typed = '';
+    let waitingNext = false;
+    let myC1, myC2, cpuC1, cpuC2;
+    const details = [];
+
+    // ── DOM refs ───────────────────────────────────────────────────────────
+    const ansEl       = document.getElementById('ansDisplay');
+    const feedback    = document.getElementById('feedback');
+    const resultEl    = document.getElementById('resultReveal');
+    const nextBtn     = document.getElementById('nextBtn');
+    const numpad      = document.getElementById('numpad');
+    const gameCard    = document.getElementById('gameCard');
+    const completionCard = document.getElementById('completionCard');
+
+    // ── Card helpers ───────────────────────────────────────────────────────
+    function drawCard() {
+      // Uniform 1–10; display A for 1
+      return 1 + Math.floor(rng() * 10);
+    }
+
+    function cardLabel(v) {
+      return v === 1 ? 'A' : String(v);
+    }
+
+    // Value used in competition for a pair of cards
+    function pairValue(c1, c2) {
+      if (op === '+') return c1 + c2;
+      return Math.abs(c1 - c2);  // subtraction mode: larger minus smaller
+    }
+
+    // ── Round setup ────────────────────────────────────────────────────────
+    function startRound() {
+      myC1  = drawCard(); myC2  = drawCard();
+      cpuC1 = drawCard(); cpuC2 = drawCard();
+
+      typed = '';
+      waitingNext = false;
+
+      document.getElementById('myCard1').textContent  = cardLabel(myC1);
+      document.getElementById('myCard2').textContent  = cardLabel(myC2);
+
+      const cpu1El = document.getElementById('cpuCard1');
+      const cpu2El = document.getElementById('cpuCard2');
+      cpu1El.textContent = '?'; cpu1El.className = 'playing-card face-down';
+      cpu2El.textContent = '?'; cpu2El.className = 'playing-card face-down';
+
+      document.getElementById('numA').textContent = cardLabel(myC1);
+      document.getElementById('opSym').textContent = op;
+      document.getElementById('numB').textContent = cardLabel(myC2);
+
+      ansEl.textContent = '\u200B';
+      ansEl.className = 'eq-ans';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      resultEl.textContent = '';
+      nextBtn.classList.remove('visible');
+    }
+
+    function setMode(newOp) {
+      op = newOp;
+      document.getElementById('modeAdd').classList.toggle('active', op === '+');
+      document.getElementById('modeSub').classList.toggle('active', op === '-');
+      // Re-render current round's equation with new operator
+      document.getElementById('opSym').textContent = op;
+      // Clear any partial answer
+      typed = '';
+      ansEl.textContent = '\u200B';
+      ansEl.className = 'eq-ans';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+    }
+
+    // ── Score display ──────────────────────────────────────────────────────
+    function updateScoreDisplay() {
+      document.getElementById('roundScore').innerHTML =
+        `<span class="you">You ${myWins}</span> &mdash; <span class="cpu">CPU ${cpuWins}</span>`;
+      const pct = Math.max(myWins, cpuWins) / TARGET_WINS * 100;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+    }
+
+    // ── Submit answer ──────────────────────────────────────────────────────
+    function submit() {
+      if (waitingNext) { nextRound(); return; }
+      if (typed === '') return;
+
+      const myTotal  = pairValue(myC1, myC2);
+      const given    = parseInt(typed, 10);
+
+      if (given !== myTotal) {
+        ansEl.textContent = typed;
+        ansEl.className = 'eq-ans wrong';
+        feedback.textContent = 'Not quite — try again!';
+        feedback.className = 'feedback err';
+        typed = '';
+        setTimeout(() => {
+          ansEl.textContent = '\u200B';
+          ansEl.className = 'eq-ans';
+        }, 600);
+        return;
+      }
+
+      // Correct — resolve the round
+      ansEl.textContent = typed;
+      ansEl.className = 'eq-ans correct';
+      feedback.textContent = 'Correct!';
+      feedback.className = 'feedback ok';
+
+      const cpuTotal = pairValue(cpuC1, cpuC2);
+
+      // Reveal computer cards
+      const cpu1El = document.getElementById('cpuCard1');
+      const cpu2El = document.getElementById('cpuCard2');
+      cpu1El.textContent = cardLabel(cpuC1); cpu1El.className = 'playing-card';
+      cpu2El.textContent = cardLabel(cpuC2); cpu2El.className = 'playing-card';
+
+      totalRounds++;
+      let roundWinner;
+      if (myTotal > cpuTotal) {
+        roundWinner = 'you';
+        myWins++;
+        document.getElementById('myCard1').closest('.player-col').querySelector('.playing-card').classList.add('win-flash');
+      } else if (cpuTotal > myTotal) {
+        roundWinner = 'cpu';
+        cpuWins++;
+        cpu1El.classList.add('win-flash');
+      } else {
+        roundWinner = 'tie';
+      }
+
+      const opWord = op === '+' ? '+' : '−';
+      const mySide  = `You: ${cardLabel(myC1)} ${opWord} ${cardLabel(myC2)} = ${myTotal}`;
+      const cpuSide = `CPU: ${cardLabel(cpuC1)} ${opWord} ${cardLabel(cpuC2)} = ${cpuTotal}`;
+      const verdict = roundWinner === 'you' ? 'You win this round!' :
+                      roundWinner === 'cpu' ? 'Computer wins this round.' :
+                      'Tie — no point awarded.';
+      resultEl.textContent = `${mySide}   ${cpuSide}   ${verdict}`;
+
+      details.push({ myCards: [myC1, myC2], cpuCards: [cpuC1, cpuC2], op, myTotal, cpuTotal, winner: roundWinner });
+
+      updateScoreDisplay();
+
+      waitingNext = true;
+
+      if (myWins >= TARGET_WINS || cpuWins >= TARGET_WINS) {
+        setTimeout(finish, 1200);
+      } else {
+        nextBtn.classList.add('visible');
+      }
+    }
+
+    function nextRound() {
+      startRound();
+    }
+
+    // ── Game over ──────────────────────────────────────────────────────────
+    function finish() {
+      gameCard.classList.add('hidden');
+      numpad.classList.add('hidden');
+      completionCard.classList.add('visible');
+      document.getElementById('progressBar').style.width = '100%';
+
+      const youWon = myWins >= TARGET_WINS;
+      document.getElementById('completionStar').textContent = youWon ? '\u2B50' : '\uD83D\uDCCA';
+      const outcomeEl = document.getElementById('winOutcome');
+      outcomeEl.textContent = youWon ? 'You won!' : 'Computer won!';
+      outcomeEl.className = 'win-outcome ' + (youWon ? 'you-win' : 'cpu-win');
+      document.getElementById('completionScore').textContent =
+        `${myWins} – ${cpuWins} after ${totalRounds} rounds`;
+
+      markDone('war', myWins, totalRounds);
+      saveResult({ game: 'war', score: myWins, total: totalRounds, details });
+    }
+
+    // ── Numpad interaction ─────────────────────────────────────────────────
+    function handleDigit(val) {
+      if (waitingNext) return;
+      if (typed.length >= 2) return;
+      typed += val;
+      ansEl.textContent = typed;
+      ansEl.className = 'eq-ans has-value';
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+    }
+
+    function handleDel() {
+      if (waitingNext) return;
+      typed = typed.slice(0, -1);
+      ansEl.textContent = typed || '\u200B';
+      ansEl.className = typed ? 'eq-ans has-value' : 'eq-ans';
+    }
+
+    document.querySelectorAll('.numpad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.val;
+        if (v === 'del')     handleDel();
+        else if (v === 'submit') submit();
+        else handleDigit(v);
+      });
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key >= '0' && e.key <= '9') handleDigit(e.key);
+      else if (e.key === 'Backspace') handleDel();
+      else if (e.key === 'Enter')     submit();
+    });
+
+    // ── Start ──────────────────────────────────────────────────────────────
+    updateScoreDisplay();
+    startRound();
+  </script>
+</body>
+</html>
