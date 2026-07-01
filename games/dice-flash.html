@@ -40,6 +40,14 @@
       background: var(--cream);
       border-radius: 17px;
     }
+    /* Two-group layout (flash-and-add) */
+    .flash-display.multi { flex-direction: column; gap: 6px; }
+    .flash-plus {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text-light);
+      line-height: 1;
+    }
 
     /* Ten-frame grid (2 rows × 5 cols) */
     .ten-frame {
@@ -61,6 +69,7 @@
       background: var(--accent);
       border-color: transparent;
     }
+    .multi .ten-frame { width: 168px; height: 66px; padding: 8px; gap: 6px; }
 
     /* Dice dot pattern (for 1-6) */
     .dice-grid {
@@ -81,6 +90,8 @@
       justify-self: center;
     }
     .dice-dot.invisible { visibility: hidden; }
+    .multi .dice-grid { width: 96px; height: 96px; padding: 10px; gap: 4px; }
+    .multi .dice-dot { width: 15px; height: 15px; }
 
     .flash-prompt {
       font-size: 1rem;
@@ -151,9 +162,6 @@
   <script src="../js/completion.js"></script>
   <script>
     // Dice dot layout: 9 cells (3×3), indices 0-8
-    // Position map: cell 0=top-left, 1=top-center, 2=top-right,
-    //               3=mid-left,  4=center,    5=mid-right,
-    //               6=bot-left,  7=bot-center, 8=bot-right
     const DICE_PATTERNS = {
       1: [4],
       2: [0, 8],
@@ -186,19 +194,52 @@
       return frame;
     }
 
-    function buildPattern(n) {
-      // Use dice layout for 1-6, ten-frame for 7-10
+    // rep: 'dots' | 'frame' | 'auto' (dice for 1-6, ten-frame for 7-10)
+    function buildGroup(n, rep) {
+      if (rep === 'dots') return buildDicePattern(n);
+      if (rep === 'frame') return buildTenFrame(n);
       return n <= 6 ? buildDicePattern(n) : buildTenFrame(n);
     }
 
-    // ── Game state ────────────────────────────────────────────────────────
+    function buildDisplay(q) {
+      flashDisplay.classList.toggle('multi', q.groups.length > 1);
+      flashDisplay.innerHTML = '';
+      q.groups.forEach((n, i) => {
+        if (i > 0) {
+          const plus = document.createElement('div');
+          plus.className = 'flash-plus';
+          plus.textContent = '+';
+          flashDisplay.appendChild(plus);
+        }
+        flashDisplay.appendChild(buildGroup(n, q.rep));
+      });
+    }
+
+    // ── Level config ────────────────────────────────────────────────────────
+    // Subitizing → flash-and-add. Pure subitizing plateaus ~10, so L3+ show two
+    // groups to be added. Flash duration is held constant (longer for two groups)
+    // — difficulty scales by quantity, never by shrinking the flash (no speed
+    // pressure, per the design brief). L5 mirrors L4 (subitizing ceiling).
     const TOTAL = 8;
-    const FLASH_DURATION_MS = 1500; // how long the pattern is visible
+    let rng;
+    let level = 1;
+    let questions = [];
 
-    const rng = todayRNG(4); // salt=4 for dice-flash
-
-    // Generate 8 random counts 1-10, seeded
-    const todayCounts = Array.from({ length: TOTAL }, () => seededInt(1, 10, rng));
+    function buildQuestions(lvl) {
+      const qs = [];
+      for (let i = 0; i < TOTAL; i++) {
+        if (lvl <= 1) {
+          qs.push({ groups: [seededInt(1, 5, rng)], rep: 'auto', flash: 1500, max: 9 });
+        } else if (lvl === 2) {
+          qs.push({ groups: [seededInt(1, 10, rng)], rep: 'auto', flash: 1500, max: 10 });
+        } else if (lvl === 3) {
+          qs.push({ groups: [seededInt(1, 6, rng), seededInt(1, 6, rng)], rep: 'dots', flash: 2200, max: 12 });
+        } else {
+          qs.push({ groups: [seededInt(1, 10, rng), seededInt(1, 10, rng)], rep: 'frame', flash: 2200, max: 20 });
+        }
+      }
+      return qs;
+    }
 
     let current = 0;
     let score = 0;
@@ -216,7 +257,8 @@
     const completionCard = document.getElementById('completionCard');
 
     function renderQuestion() {
-      const n = todayCounts[current];
+      const q = questions[current];
+      q.answer = q.groups.reduce((s, n) => s + n, 0);
       locked = false;
       revealed = false;
 
@@ -226,8 +268,7 @@
       feedbackEl.className = 'feedback';
 
       // Pre-load pattern but cover it
-      flashDisplay.innerHTML = '';
-      flashDisplay.appendChild(buildPattern(n));
+      buildDisplay(q);
       flashDisplay.classList.add('covered');
       flashDisplay.style.opacity = '';
 
@@ -238,58 +279,58 @@
 
       // Enable tap to reveal
       flashDisplay.style.pointerEvents = 'auto';
-      flashDisplay.onclick = () => revealFlash(n);
+      flashDisplay.onclick = () => revealFlash(q);
     }
 
-    function revealFlash(n) {
+    function revealFlash(q) {
       if (revealed) return;
       revealed = true;
       flashDisplay.onclick = null;
       flashDisplay.classList.remove('covered');
       flashDisplay.style.opacity = '1';
-      flashPrompt.textContent = 'How many dots?';
+      flashPrompt.textContent = q.groups.length > 1 ? 'How many altogether?' : 'How many dots?';
       tapHint.classList.add('hidden');
 
       setTimeout(() => {
         flashDisplay.classList.add('covered');
-        showChoices(n);
-      }, FLASH_DURATION_MS);
+        showChoices(q);
+      }, q.flash);
     }
 
-    function showChoices(n) {
-      const wrongs = wrongChoices(n, 3);
-      const all = seededShuffle([n, ...wrongs], rng);
+    function showChoices(q) {
+      const wrongs = wrongChoices(q.answer, 3, q.max);
+      const all = seededShuffle([q.answer, ...wrongs], rng);
 
       choicesEl.innerHTML = '';
       all.forEach(val => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = val;
-        btn.addEventListener('click', () => handleChoice(val, n, btn));
+        btn.addEventListener('click', () => handleChoice(val, q, btn));
         choicesEl.appendChild(btn);
       });
       choicesEl.classList.remove('hidden');
     }
 
-    function wrongChoices(correct, count) {
+    function wrongChoices(correct, count, max) {
       const pool = [];
-      for (let x = 1; x <= 10; x++) {
+      for (let x = 1; x <= max; x++) {
         if (x !== correct) pool.push(x);
       }
-      pool.sort((a,b) => Math.abs(a-correct) - Math.abs(b-correct));
+      pool.sort((a, b) => Math.abs(a - correct) - Math.abs(b - correct));
       return seededShuffle(pool.slice(0, count + 2), rng).slice(0, count);
     }
 
-    function handleChoice(val, correct, btn) {
+    function handleChoice(val, q, btn) {
       if (locked) return;
       locked = true;
 
-      const isCorrect = val === correct;
-      details.push({ count: correct, given: val, correct: isCorrect });
+      const isCorrect = val === q.answer;
+      details.push({ groups: q.groups, count: q.answer, given: val, correct: isCorrect });
 
       // Show correct answer
       document.querySelectorAll('.choice-btn').forEach(b => {
-        if (parseInt(b.textContent, 10) === correct) b.classList.add('correct-choice');
+        if (parseInt(b.textContent, 10) === q.answer) b.classList.add('correct-choice');
         else if (b === btn && !isCorrect) b.classList.add('wrong-choice');
       });
 
@@ -301,7 +342,7 @@
         feedbackEl.textContent = 'Yes!';
         feedbackEl.className = 'feedback ok';
       } else {
-        feedbackEl.textContent = `It was ${correct} — look again!`;
+        feedbackEl.textContent = `It was ${q.answer} — look again!`;
         feedbackEl.className = 'feedback err';
       }
 
@@ -324,10 +365,16 @@
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
       markDone('dice_flash', score, TOTAL);
-      saveResult({ game: 'dice_flash', score, total: TOTAL, details });
+      saveResult({ game: 'dice_flash', score, total: TOTAL, details: { level, questions: details } });
     }
 
-    renderQuestion();
+    // ── Init (async — level comes from Supabase) ────────────────────────────
+    (async function init() {
+      level = await fetchLevel();
+      rng = todayRNG(4 + level * 100);   // deterministic per (date, level)
+      questions = buildQuestions(level);
+      renderQuestion();
+    })();
   </script>
 </body>
 </html>

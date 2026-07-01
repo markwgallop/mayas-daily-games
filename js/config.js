@@ -11,8 +11,10 @@ window.SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 // Change this if adding a second child.
 window.CHILD_NAME = 'maya';
 
-// Daily Facts difficulty band (1–5).
-// Bump this to advance Maya to harder facts. See docs for band descriptions.
-// 1=Foundations (sum≤10)  2=Make-a-ten (sum 11-20)  3=All addition to 20
+// Global difficulty level (1–5) — applies to ALL games, each of which maps it
+// to its own difficulty via a LEVEL_CONFIG. This is only the build-time default;
+// the parent portal overrides it (stored in Supabase settings). The var name is
+// kept as DAILY_FACTS_BAND for wire-compat with netlify.toml / the Netlify env var.
+// 1=Foundations (to 10)  2=Bridging ten (11-20)  3=Fluency to 20
 // 4=Add & subtract to 20  5=Within 100
 window.DAILY_FACTS_BAND = 1;

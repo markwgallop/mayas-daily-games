@@ -29,7 +29,10 @@ function getClient() {
  * @param {Object} result.details  - game-specific per-problem data (stored as jsonb)
  * @returns {Promise<void>}
  */
-async function fetchBand() {
+// The global difficulty level (1–5), set once by the parent in the portal and
+// applied by every game via its own LEVEL_CONFIG. Stored under the legacy
+// 'facts_band' settings key (kept for wire-compat; the value is the level).
+async function fetchLevel() {
   try {
     const { data } = await getClient()
       .from('settings')

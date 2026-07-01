@@ -46,6 +46,7 @@
       justify-content: center;
     }
     .playing-card {
+      position: relative;
       width: 64px;
       height: 88px;
       border-radius: 10px;
@@ -54,11 +55,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
-      font-weight: 900;
       box-shadow: 0 2px 8px var(--shadow);
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, transform 0.2s;
+      overflow: hidden;
     }
+    .pc-value { font-size: 1.9rem; font-weight: 900; line-height: 1; }
+    .pc-corner {
+      position: absolute;
+      font-size: 0.72rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .pc-tl { top: 5px; left: 6px; }
+    .pc-br { bottom: 5px; right: 6px; transform: rotate(180deg); }
     .playing-card.face-down {
       background: var(--war-hue);
       border-color: transparent;
@@ -67,7 +76,28 @@
     }
     .playing-card.win-flash {
       border-color: var(--correct);
+      transform: translateY(-4px);
     }
+
+    /* Per-round tally */
+    .tally-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .tally-vs { font-size: 0.8rem; font-weight: 700; color: var(--text-light); }
+    .tally { padding: 2px 10px; border-radius: 8px; }
+    .tally.you { color: var(--war-hue); }
+    .tally.cpu { color: var(--text-light); }
+    .tally.won { background: var(--correct); color: #fff; }
+    .verdict { font-size: 1rem; font-weight: 800; }
+    .verdict.you { color: var(--correct); }
+    .verdict.cpu { color: var(--wrong); }
+    .verdict.tie { color: var(--text-light); }
 
     /* Equation row (child's cards) */
     .equation {
@@ -257,7 +287,33 @@
     let typed = '';
     let waitingNext = false;
     let myC1, myC2, cpuC1, cpuC2;
+    let myS1, myS2, cpuS1, cpuS2;
     const details = [];
+
+    // Suits are cosmetic only — use Math.random, NOT the seeded rng,
+    // so the daily card sequence stays deterministic.
+    const SUITS = [
+      { sym: '♠', color: '#1a1a2e' }, // spade
+      { sym: '♥', color: '#d64545' }, // heart
+      { sym: '♦', color: '#d64545' }, // diamond
+      { sym: '♣', color: '#1a1a2e' }, // club
+    ];
+    function randSuit() { return SUITS[Math.floor(Math.random() * 4)]; }
+
+    function renderCard(el, value, suit) {
+      el.className = 'playing-card';
+      el.style.color = suit.color;
+      el.innerHTML =
+        `<span class="pc-corner pc-tl">${value}${suit.sym}</span>` +
+        `<span class="pc-value">${value}</span>` +
+        `<span class="pc-corner pc-br">${value}${suit.sym}</span>`;
+    }
+
+    function faceDown(el) {
+      el.className = 'playing-card face-down';
+      el.style.color = '';
+      el.innerHTML = '?';
+    }
 
     // ── DOM refs ───────────────────────────────────────────────────────────
     const ansEl       = document.getElementById('ansDisplay');
@@ -275,7 +331,8 @@
     }
 
     function cardLabel(v) {
-      return v === 1 ? 'A' : String(v);
+      // Deck is 1–10; the Ace reads as its value so the sum isn't confusing.
+      return String(v);
     }
 
     // Value used in competition for a pair of cards
@@ -288,17 +345,17 @@
     function startRound() {
       myC1  = drawCard(); myC2  = drawCard();
       cpuC1 = drawCard(); cpuC2 = drawCard();
+      myS1  = randSuit();  myS2  = randSuit();
+      cpuS1 = randSuit();  cpuS2 = randSuit();
 
       typed = '';
       waitingNext = false;
 
-      document.getElementById('myCard1').textContent  = cardLabel(myC1);
-      document.getElementById('myCard2').textContent  = cardLabel(myC2);
+      renderCard(document.getElementById('myCard1'), myC1, myS1);
+      renderCard(document.getElementById('myCard2'), myC2, myS2);
 
-      const cpu1El = document.getElementById('cpuCard1');
-      const cpu2El = document.getElementById('cpuCard2');
-      cpu1El.textContent = '?'; cpu1El.className = 'playing-card face-down';
-      cpu2El.textContent = '?'; cpu2El.className = 'playing-card face-down';
+      faceDown(document.getElementById('cpuCard1'));
+      faceDown(document.getElementById('cpuCard2'));
 
       document.getElementById('numA').textContent = cardLabel(myC1);
       document.getElementById('opSym').textContent = op;
@@ -366,30 +423,35 @@
       // Reveal computer cards
       const cpu1El = document.getElementById('cpuCard1');
       const cpu2El = document.getElementById('cpuCard2');
-      cpu1El.textContent = cardLabel(cpuC1); cpu1El.className = 'playing-card';
-      cpu2El.textContent = cardLabel(cpuC2); cpu2El.className = 'playing-card';
+      renderCard(cpu1El, cpuC1, cpuS1);
+      renderCard(cpu2El, cpuC2, cpuS2);
 
       totalRounds++;
       let roundWinner;
       if (myTotal > cpuTotal) {
         roundWinner = 'you';
         myWins++;
-        document.getElementById('myCard1').closest('.player-col').querySelector('.playing-card').classList.add('win-flash');
+        document.getElementById('myCard1').classList.add('win-flash');
+        document.getElementById('myCard2').classList.add('win-flash');
       } else if (cpuTotal > myTotal) {
         roundWinner = 'cpu';
         cpuWins++;
         cpu1El.classList.add('win-flash');
+        cpu2El.classList.add('win-flash');
       } else {
         roundWinner = 'tie';
       }
 
-      const opWord = op === '+' ? '+' : '−';
-      const mySide  = `You: ${cardLabel(myC1)} ${opWord} ${cardLabel(myC2)} = ${myTotal}`;
-      const cpuSide = `CPU: ${cardLabel(cpuC1)} ${opWord} ${cardLabel(cpuC2)} = ${cpuTotal}`;
-      const verdict = roundWinner === 'you' ? 'You win this round!' :
+      const verdict = roundWinner === 'you' ? 'You win this round! 🎉' :
                       roundWinner === 'cpu' ? 'Computer wins this round.' :
-                      'Tie — no point awarded.';
-      resultEl.textContent = `${mySide}   ${cpuSide}   ${verdict}`;
+                      'Tie — no point.';
+      resultEl.innerHTML =
+        `<div class="tally-line">` +
+          `<span class="tally you ${roundWinner === 'you' ? 'won' : ''}">You ${myTotal}</span>` +
+          `<span class="tally-vs">vs</span>` +
+          `<span class="tally cpu ${roundWinner === 'cpu' ? 'won' : ''}">CPU ${cpuTotal}</span>` +
+        `</div>` +
+        `<div class="verdict ${roundWinner}">${verdict}</div>`;
 
       details.push({ myCards: [myC1, myC2], cpuCards: [cpuC1, cpuC2], op, myTotal, cpuTotal, winner: roundWinner });
 

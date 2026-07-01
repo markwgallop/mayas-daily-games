@@ -56,7 +56,7 @@
 
     <!-- Question -->
     <div class="card" id="questionCard">
-      <div class="ten-prompt">What makes 10?</div>
+      <div class="ten-prompt" id="tenPrompt">What makes 10?</div>
       <div class="ten-number" id="mainNumber"></div>
       <div class="ten-equation" id="equation"></div>
       <div class="feedback" id="feedback"></div>
@@ -83,12 +83,58 @@
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
   <script>
-    // Numbers 1–9; pick 8 for today's set, seeded.
-    const ALL_NUMBERS = [1,2,3,4,5,6,7,8,9];
+    // ── Level config ───────────────────────────────────────────────────────
+    // Make-a-Ten trains number bonds / complements. The global level scales the
+    // "whole" (10 → 20 → 100) and, at L4, varies the blank position so the child
+    // also reasons about the inverse (? + a = whole).
     const TOTAL = 8;
+    let rng;               // seeded per (date, level) in init()
+    let level = 1;
+    let questions = [];
 
-    const rng = todayRNG(2); // salt=2 for make-ten
-    const todayNums = seededPick(ALL_NUMBERS, TOTAL, rng);
+    function range(min, max) { const a = []; for (let x = min; x <= max; x++) a.push(x); return a; }
+    function randOf(arr)     { return arr[Math.floor(rng() * arr.length)]; }
+
+    function buildQuestions(lvl) {
+      const qs = [];
+      if (lvl <= 1) {
+        // Whole = 10, parts 1–9
+        seededPick(range(1, 9), TOTAL, rng).forEach(a => qs.push({ whole: 10, a, blankFirst: false }));
+      } else if (lvl === 2) {
+        // Bridging ten: make 20 from a teen number
+        seededPick(range(11, 19), TOTAL, rng).forEach(a => qs.push({ whole: 20, a, blankFirst: false }));
+      } else if (lvl === 3) {
+        // Bonds within 20 (make 10 or make 20)
+        for (let i = 0; i < TOTAL; i++) {
+          const whole = randOf([10, 20]);
+          qs.push({ whole, a: seededInt(1, whole - 1, rng), blankFirst: false });
+        }
+      } else if (lvl === 4) {
+        // As L3, but the blank can be either addend (inverse reasoning)
+        for (let i = 0; i < TOTAL; i++) {
+          const whole = randOf([10, 20]);
+          qs.push({ whole, a: seededInt(1, whole - 1, rng), blankFirst: rng() < 0.5 });
+        }
+      } else {
+        // Level 5: complements to 100 in tens
+        seededPick([10, 20, 30, 40, 50, 60, 70, 80, 90], TOTAL, rng)
+          .forEach(a => qs.push({ whole: 100, a, blankFirst: false }));
+      }
+      return qs;
+    }
+
+    function choiceOpts(q) {
+      return q.whole === 100
+        ? { min: 10, max: 90, step: 10 }
+        : { min: 1, max: q.whole - 1, step: 1 };
+    }
+
+    function equationHTML(q, answerText) {
+      const blank = answerText != null ? `<span>${answerText}</span>` : '?';
+      return q.blankFirst
+        ? `${blank} + ${q.a} = ${q.whole}`
+        : `${q.a} + ${blank} = ${q.whole}`;
+    }
 
     let current = 0;
     let score = 0;
@@ -97,6 +143,7 @@
 
     const mainNumberEl = document.getElementById('mainNumber');
     const equationEl   = document.getElementById('equation');
+    const promptEl     = document.getElementById('tenPrompt');
     const feedbackEl   = document.getElementById('feedback');
     const counterEl    = document.getElementById('counter');
     const progressBar  = document.getElementById('progressBar');
@@ -104,67 +151,64 @@
     const questionCard = document.getElementById('questionCard');
     const completionCard = document.getElementById('completionCard');
 
-    function wrongChoices(correct, n) {
-      // Plausible wrong answers: numbers close to correct, within 1–9, not the number itself
+    function wrongChoices(correct, n, opts) {
       const pool = [];
-      for (let x = 1; x <= 9; x++) {
+      for (let x = opts.min; x <= opts.max; x += opts.step) {
         if (x !== correct) pool.push(x);
       }
-      // Prefer close numbers
+      // Prefer close numbers, then shuffle those
       pool.sort((a, b) => Math.abs(a - correct) - Math.abs(b - correct));
-      // Take the closest n, then shuffle them
-      const picked = pool.slice(0, n + 2);
-      return seededShuffle(picked, rng).slice(0, n);
+      return seededShuffle(pool.slice(0, n + 2), rng).slice(0, n);
     }
 
     function renderQuestion() {
-      const num = todayNums[current];
-      const partner = 10 - num;
+      const q = questions[current];
+      q.answer = q.whole - q.a;
       locked = false;
 
-      mainNumberEl.textContent = num;
-      equationEl.innerHTML = `${num} + <span>?</span> = 10`;
+      promptEl.textContent = `Make ${q.whole}`;
+      mainNumberEl.textContent = q.a;
+      equationEl.innerHTML = equationHTML(q, null);
       feedbackEl.textContent = '';
       feedbackEl.className = 'feedback';
       counterEl.textContent = `${current + 1} / ${TOTAL}`;
       progressBar.style.width = `${(current / TOTAL) * 100}%`;
 
-      // Build 4 choices: correct + 3 wrong
-      const wrongs = wrongChoices(partner, 3);
-      const allChoices = seededShuffle([partner, ...wrongs], rng);
+      const wrongs = wrongChoices(q.answer, 3, choiceOpts(q));
+      const allChoices = seededShuffle([q.answer, ...wrongs], rng);
 
       choicesEl.innerHTML = '';
       allChoices.forEach(val => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = val;
-        btn.addEventListener('click', () => handleChoice(val, partner, num, btn));
+        btn.addEventListener('click', () => handleChoice(val, q, btn));
         choicesEl.appendChild(btn);
       });
     }
 
-    function handleChoice(val, partner, num, btn) {
+    function handleChoice(val, q, btn) {
       if (locked) return;
 
-      const isCorrect = val === partner;
-      details.push({ number: num, partner, given: val, correct: isCorrect });
+      const isCorrect = val === q.answer;
+      details.push({ whole: q.whole, a: q.a, answer: q.answer, given: val, correct: isCorrect, blankFirst: q.blankFirst });
 
       // Highlight all buttons
       document.querySelectorAll('.choice-btn').forEach(b => {
         const bVal = parseInt(b.textContent, 10);
-        if (bVal === partner) b.classList.add('correct-choice');
+        if (bVal === q.answer) b.classList.add('correct-choice');
         else if (b === btn && !isCorrect) b.classList.add('wrong-choice');
       });
 
+      equationEl.innerHTML = equationHTML(q, q.answer);
+
       if (isCorrect) {
         score++;
-        feedbackEl.textContent = 'Yes! ' + num + ' + ' + partner + ' = 10';
+        feedbackEl.textContent = 'Yes!';
         feedbackEl.className = 'feedback ok';
-        equationEl.innerHTML = `${num} + <span>${partner}</span> = 10`;
       } else {
-        feedbackEl.textContent = `${num} + ${partner} = 10. Try to remember it!`;
+        feedbackEl.textContent = `It's ${q.answer}. Try to remember it!`;
         feedbackEl.className = 'feedback err';
-        equationEl.innerHTML = `${num} + <span>${partner}</span> = 10`;
       }
 
       locked = true;
@@ -188,10 +232,16 @@
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
       markDone('make_ten', score, TOTAL);
-      saveResult({ game: 'make_ten', score, total: TOTAL, details });
+      saveResult({ game: 'make_ten', score, total: TOTAL, details: { level, questions: details } });
     }
 
-    renderQuestion();
+    // ── Init (async — level comes from Supabase) ────────────────────────────
+    (async function init() {
+      level = await fetchLevel();
+      rng = todayRNG(2 + level * 100);   // deterministic per (date, level)
+      questions = buildQuestions(level);
+      renderQuestion();
+    })();
   </script>
 </body>
 </html>
