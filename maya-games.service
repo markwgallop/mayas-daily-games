@@ -1,0 +1,14 @@
+[Unit]
+Description=Maya's Daily Games — local static server
+After=network.target
+
+[Service]
+Type=simple
+User=markgallop
+WorkingDirectory=/home/markgallop/HomePi/claude-ws/maya-games
+ExecStart=/usr/bin/python3 -m http.server 5050
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
