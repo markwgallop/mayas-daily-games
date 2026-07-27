@@ -60,13 +60,13 @@ async function saveResult(result) {
     const { error } = await db.from('results').insert(row);
     if (error) {
       console.warn('saveResult error:', error.message);
-      return false;
+      return { ok: false, message: error.message };
     }
-    return true;
+    return { ok: true };
   } catch (e) {
     // Network failure etc. — insert() can reject rather than resolve with `error`.
     console.warn('saveResult exception:', e.message);
-    return false;
+    return { ok: false, message: e.message };
   }
 }
 
@@ -76,11 +76,11 @@ async function saveResult(result) {
  * screen either way — this only adds a visible save indicator.
  */
 async function saveResultAndReport(result) {
-  const ok = await saveResult(result);
-  showSaveStatus(ok, () => saveResultAndReport(result));
+  const { ok, message } = await saveResult(result);
+  showSaveStatus(ok, message, () => saveResultAndReport(result));
 }
 
-function showSaveStatus(ok, retry) {
+function showSaveStatus(ok, message, retry) {
   const card = document.getElementById('completionCard');
   if (!card) return;
 
@@ -100,7 +100,7 @@ function showSaveStatus(ok, retry) {
 
   el.innerHTML = '';
   const msg = document.createElement('span');
-  msg.textContent = 'Not saved — check your connection.';
+  msg.textContent = `Not saved (${message}).`;
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'btn btn-primary retry-btn';
