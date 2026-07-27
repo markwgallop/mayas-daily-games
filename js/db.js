@@ -14,7 +14,13 @@ let _client = null;
 
 function getClient() {
   if (!_client) {
-    _client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    // The child pages and the parent portal share an origin, so a logged-in
+    // portal session sits in localStorage. Without this, the Supabase client
+    // picks that session up automatically and inserts as `authenticated`
+    // instead of `anon` — which has no INSERT policy, so RLS rejects it.
+    _client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
   }
   return _client;
 }
