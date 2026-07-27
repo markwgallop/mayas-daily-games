@@ -269,7 +269,7 @@
       }
 
       markDone('facts', score, TOTAL);
-      saveResult({ game: 'facts', score, total: TOTAL, details: { band: BAND, questions: details } });
+      saveResultAndReport({ game: 'facts', score, total: TOTAL, details: { band: BAND, questions: details } });
     }
 
     // ── Numpad interaction ─────────────────────────────────────────────────

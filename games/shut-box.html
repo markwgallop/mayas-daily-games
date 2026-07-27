@@ -432,7 +432,7 @@
 
       // score = remaining tiles (lower = better); 0 = perfect
       markDone('shut_box', remaining, maxScore);
-      saveResult({
+      saveResultAndReport({
         game: 'shut_box',
         score: remaining,
         total: maxScore,

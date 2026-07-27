@@ -56,9 +56,57 @@ async function saveResult(result) {
     details: result.details,
   };
 
-  const { error } = await db.from('results').insert(row);
-  if (error) {
-    // Non-fatal — log only. The game still shows the completion screen.
-    console.warn('saveResult error:', error.message);
+  try {
+    const { error } = await db.from('results').insert(row);
+    if (error) {
+      console.warn('saveResult error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    // Network failure etc. — insert() can reject rather than resolve with `error`.
+    console.warn('saveResult exception:', e.message);
+    return false;
   }
+}
+
+/**
+ * Save a result and surface success/failure on the completion screen,
+ * with a Retry button on failure. The game still shows its completion
+ * screen either way — this only adds a visible save indicator.
+ */
+async function saveResultAndReport(result) {
+  const ok = await saveResult(result);
+  showSaveStatus(ok, () => saveResultAndReport(result));
+}
+
+function showSaveStatus(ok, retry) {
+  const card = document.getElementById('completionCard');
+  if (!card) return;
+
+  let el = document.getElementById('saveStatus');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'saveStatus';
+    el.className = 'save-status';
+    card.insertBefore(el, card.querySelector('.btn-primary'));
+  }
+
+  if (ok) {
+    el.classList.remove('show');
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = '';
+  const msg = document.createElement('span');
+  msg.textContent = 'Not saved — check your connection.';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-primary retry-btn';
+  btn.textContent = 'Retry';
+  btn.onclick = retry;
+  el.appendChild(msg);
+  el.appendChild(btn);
+  el.classList.add('show');
 }

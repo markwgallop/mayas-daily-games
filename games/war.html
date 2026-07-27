@@ -486,7 +486,7 @@
         `${myWins} – ${cpuWins} after ${totalRounds} rounds`;
 
       markDone('war', myWins, totalRounds);
-      saveResult({ game: 'war', score: myWins, total: totalRounds, details });
+      saveResultAndReport({ game: 'war', score: myWins, total: totalRounds, details });
     }
 
     // ── Numpad interaction ─────────────────────────────────────────────────

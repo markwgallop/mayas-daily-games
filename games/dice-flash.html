@@ -365,7 +365,7 @@
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
       markDone('dice_flash', score, TOTAL);
-      saveResult({ game: 'dice_flash', score, total: TOTAL, details: { level, questions: details } });
+      saveResultAndReport({ game: 'dice_flash', score, total: TOTAL, details: { level, questions: details } });
     }
 
     // ── Init (async — level comes from Supabase) ────────────────────────────

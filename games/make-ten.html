@@ -232,7 +232,7 @@
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
       markDone('make_ten', score, TOTAL);
-      saveResult({ game: 'make_ten', score, total: TOTAL, details: { level, questions: details } });
+      saveResultAndReport({ game: 'make_ten', score, total: TOTAL, details: { level, questions: details } });
     }
 
     // ── Init (async — level comes from Supabase) ────────────────────────────
