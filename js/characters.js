@@ -118,15 +118,34 @@ const CELEBRATION_CHARACTERS = [
    interlocking quarters, so the pieces always fit together perfectly.
    ========================================================= */
 
-/** Tribe palettes and the accent detail that makes each one recognisable. */
+/**
+ * Tribe palettes and anatomy.
+ *
+ * Each tribe gets its canon colouring plus the physical features that make it
+ * that tribe rather than a recolour: MudWings are broad and armoured, SeaWings
+ * are webbed and gilled and glow, RainWings shift colour and coil their tails.
+ */
 const DRAGON_TRIBES = [
-  { name: 'SkyWing',   body: '#E8562F', belly: '#F7C08A', wing: '#F08A5D', line: '#8C2A10', horn: '#F7C08A', accent: 'none'    },
-  { name: 'SeaWing',   body: '#2E9B8F', belly: '#9FE5DC', wing: '#4FBFB0', line: '#12564F', horn: '#9FE5DC', accent: 'glow'    },
-  { name: 'RainWing',  body: 'RAINBOW', belly: '#FFE9A8', wing: '#8AD9C0', line: '#7A3E8C', horn: '#FFE9A8', accent: 'none' },
-  { name: 'NightWing', body: '#3B3355', belly: '#6E6390', wing: '#4C4470', line: '#1A1630', horn: '#8E85B5', accent: 'stars'   },
-  { name: 'IceWing',   body: '#CFE6F5', belly: '#FFFFFF', wing: '#A9D3EC', line: '#4A7EA0', horn: '#FFFFFF', accent: 'spikes'  },
-  { name: 'MudWing',   body: '#8C6239', belly: '#D9B683', wing: '#A67C4E', line: '#4E3417', horn: '#D9B683', accent: 'none'    },
-  { name: 'SandWing',  body: '#E3C77E', belly: '#F7EBC4', wing: '#EAD69F', line: '#8A6B22', horn: '#F7EBC4', accent: 'barb'    },
+  { name: 'SkyWing',   body: '#E8562F', belly: '#F7C08A', wing: '#F08A5D', line: '#8C2A10', horn: '#F7C08A' },
+
+  // Brown, with amber and gold underscales. Large flat head, nostrils on top of
+  // the snout, thick armoured scales.
+  { name: 'MudWing',   body: '#8C6239', belly: '#D9A441', wing: '#A67C4E', line: '#4E3417', horn: '#D9B683',
+    eye: '#7A4E1C', flatHead: true, topNostrils: true, armour: true, underscale: '#E8C25A' },
+
+  // Blue-green-aquamarine. Webbed claws, gills on the neck, glow-in-the-dark
+  // stripes on tail, snout and underbelly.
+  { name: 'SeaWing',   body: '#2E9B8F', belly: '#9FE5DC', wing: '#4FBFB0', line: '#12564F', horn: '#9FE5DC',
+    eye: '#1C7A46', gills: true, webbedClaws: true, glowStripes: true, glow: '#9BFFEF' },
+
+  // Constantly shifting bright colour, like a bird-of-paradise. Prehensile tail,
+  // and eyes that pick up whatever the scales are doing.
+  { name: 'RainWing',  body: 'RAINBOW', belly: '#FFE9A8', wing: '#8AD9C0', line: '#7A3E8C', horn: '#FFE9A8',
+    eye: 'SHIFTING', prehensileTail: true, shifting: true },
+
+  { name: 'NightWing', body: '#3B3355', belly: '#6E6390', wing: '#4C4470', line: '#1A1630', horn: '#8E85B5', stars: true },
+  { name: 'IceWing',   body: '#CFE6F5', belly: '#FFFFFF', wing: '#A9D3EC', line: '#4A7EA0', horn: '#FFFFFF', spikes: true },
+  { name: 'SandWing',  body: '#E3C77E', belly: '#F7EBC4', wing: '#EAD69F', line: '#8A6B22', horn: '#F7EBC4', barb: true },
 ];
 
 /** Which tribe's dragon belongs to a given day. Same rule as the puzzles. */
@@ -136,11 +155,12 @@ function tribeForDate(date) {
 
 /**
  * The full dragon, drawn once on a 0 0 120 120 canvas.
- * `uid` keeps the RainWing gradient id unique when several dragons share a page.
+ * `uid` keeps the gradient ids unique when several dragons share a page.
  */
 function _dragonArt(t, uid) {
   const L = t.line;
   const body = t.body === 'RAINBOW' ? `url(#wof-rain-${uid})` : t.body;
+  const eye  = t.eye === 'SHIFTING' ? `url(#wof-eye-${uid})` : (t.eye || '#1a1a2e');
 
   // Wings sweep up and out from the shoulders to the top corners, with a
   // scalloped trailing edge and finger bones — the thing that makes a
@@ -159,69 +179,147 @@ function _dragonArt(t, uid) {
     </g>`;
   };
 
-  const glow = t.accent === 'glow' ? `
-    <circle cx="48" cy="80" r="2.4" fill="#BFFFF4"/><circle cx="48" cy="92" r="2.4" fill="#BFFFF4"/>
-    <circle cx="72" cy="80" r="2.4" fill="#BFFFF4"/><circle cx="72" cy="92" r="2.4" fill="#BFFFF4"/>
-    <circle cx="22" cy="38" r="2.2" fill="#BFFFF4"/><circle cx="98" cy="38" r="2.2" fill="#BFFFF4"/>
-    <circle cx="32" cy="52" r="1.8" fill="#BFFFF4"/><circle cx="88" cy="52" r="1.8" fill="#BFFFF4"/>` : '';
+  // RainWings have prehensile tails, so theirs curls into a grip.
+  const tail = t.prehensileTail
+    ? 'M78 98 C 99 100, 114 105, 111 113 C 108 120, 97 118, 99 111'
+    : 'M78 98 C 98 102, 109 109, 111 117';
 
-  const stars = t.accent === 'stars' ? `
+  // MudWing heads are large and flat; everyone else's is rounder and higher.
+  const flat = !!t.flatHead;
+  const headCy   = flat ? 34   : 36;
+  const headRx   = flat ? 19.5 : 16;
+  const headRy   = flat ? 11   : 14;
+  const eyeY     = flat ? 32   : 34;
+  const eyeX     = flat ? 8    : 6;   // offset from centre
+  const muzzleCy = flat ? 45   : 47;
+  const muzzleRx = flat ? 13   : 10;
+  const muzzleRy = flat ? 6.5  : 7.5;
+
+  // MudWing nostrils sit on top of the snout rather than facing forward.
+  const nostrils = t.topNostrils
+    ? `<ellipse cx="56" cy="${muzzleCy - 4}" rx="1.9" ry="1.2" fill="${L}"/>
+       <ellipse cx="64" cy="${muzzleCy - 4}" rx="1.9" ry="1.2" fill="${L}"/>`
+    : `<circle cx="57" cy="${muzzleCy - 2}" r="1.4" fill="${L}"/>
+       <circle cx="63" cy="${muzzleCy - 2}" r="1.4" fill="${L}"/>`;
+
+  // Belly detail: armour plates, glow stripes, or plain scale lines.
+  const bellyDetail = t.armour
+    ? `<path d="M41 78 Q60 71 79 78 M41 88 Q60 81 79 88 M45 97 Q60 91 75 97"
+             fill="none" stroke="${L}" stroke-width="2.1" opacity="0.5" stroke-linecap="round"/>
+       <path d="M52 84 h16 M52 92 h16" stroke="${t.underscale}" stroke-width="2.6" stroke-linecap="round"/>`
+    : t.glowStripes
+    ? `<path d="M51 83 h18 M51 90 h18 M54 96 h12"
+             stroke="${t.glow}" stroke-width="2.6" stroke-linecap="round"/>`
+    : `<path d="M50 82 h20 M50 90 h20 M52 97 h16" stroke="${L}" stroke-width="1.2" opacity="0.3"/>`;
+
+  // SeaWing gills, down both sides of the neck.
+  // Only a narrow strip of neck shows between the muzzle and the body, so the
+  // gills live there and are drawn last, on top of everything.
+  const gills = t.gills ? `
+    <path d="M50 52 q4.5 2.5 0 5 M50 59 q4.5 2.5 0 5 M50 66 q4.5 2.5 0 5"
+          fill="none" stroke="${L}" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M70 52 q-4.5 2.5 0 5 M70 59 q-4.5 2.5 0 5 M70 66 q-4.5 2.5 0 5"
+          fill="none" stroke="${L}" stroke-width="1.8" stroke-linecap="round"/>` : '';
+
+  // SeaWing webbing between the claws.
+  const webs = t.webbedClaws ? `
+    <path d="M31 108 Q34 118 40 116 Q46 118 49 108 Q40 113 31 108 Z"
+          fill="${t.glow}" opacity="0.9" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M71 108 Q74 118 80 116 Q86 118 89 108 Q80 113 71 108 Z"
+          fill="${t.glow}" opacity="0.9" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>` : '';
+
+  // Claw ticks, unless the webbing already covers the feet.
+  const claws = t.webbedClaws ? '' : `
+    <path d="M33 110 h4 M40 111 h4 M47 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M73 110 h4 M80 111 h4 M87 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>`;
+
+  // SeaWing glow stripes run the length of the tail and across the snout too.
+  const tailGlow = t.glowStripes
+    ? `<path d="${tail}" fill="none" stroke="${t.glow}" stroke-width="3" stroke-dasharray="3 6" stroke-linecap="round"/>`
+    : '';
+  const snoutGlow = t.glowStripes
+    ? `<path d="M54 ${muzzleCy + 1} h12" stroke="${t.glow}" stroke-width="2.4" stroke-linecap="round"/>`
+    : '';
+
+  // RainWing scales shifting colour, over the gradient.
+  const shifting = t.shifting ? `
+    <circle cx="47" cy="80" r="4.5" fill="#FF8FCF" opacity="0.7"/>
+    <circle cx="72" cy="86" r="4" fill="#7FE0FF" opacity="0.7"/>
+    <circle cx="58" cy="98" r="3.4" fill="#FFE066" opacity="0.7"/>
+    <circle cx="66" cy="74" r="3" fill="#B9FF7F" opacity="0.7"/>` : '';
+
+  const stars = t.stars ? `
     <circle cx="20" cy="34" r="1.8" fill="#E8E2FF"/><circle cx="30" cy="50" r="1.4" fill="#E8E2FF"/>
     <circle cx="12" cy="26" r="1.3" fill="#E8E2FF"/><circle cx="100" cy="34" r="1.8" fill="#E8E2FF"/>
     <circle cx="90" cy="50" r="1.4" fill="#E8E2FF"/><circle cx="108" cy="26" r="1.3" fill="#E8E2FF"/>` : '';
 
-  // IceWing: a spined crest down the neck and along the tail.
-  const spikes = t.accent === 'spikes' ? `
+  const spikes = t.spikes ? `
     <path d="M60 20 L57 27 L63 27 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M88 100 L94 96 L92 103 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M100 110 L107 108 L103 114 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>` : '';
 
-  // SandWing: the barbed tail tip.
-  const barb = t.accent === 'barb' ? `
+  const barb = t.barb ? `
     <path d="M108 114 L119 108 L112 120 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.8" stroke-linejoin="round"/>` : '';
 
   return `
     ${wing(false)}${wing(true)}
     ${stars}
-    <!-- tail, sweeping out to the bottom-right -->
-    <path d="M78 98 C 98 102, 109 109, 111 117" fill="none" stroke="${L}" stroke-width="9.5" stroke-linecap="round"/>
-    <path d="M78 98 C 98 102, 109 109, 111 117" fill="none" stroke="${body}" stroke-width="6" stroke-linecap="round"/>
-    ${barb}
+    <!-- tail -->
+    <path d="${tail}" fill="none" stroke="${L}" stroke-width="9.5" stroke-linecap="round"/>
+    <path d="${tail}" fill="none" stroke="${body}" stroke-width="6" stroke-linecap="round"/>
+    ${tailGlow}${barb}
     <!-- hind legs -->
     <ellipse cx="40" cy="105" rx="11" ry="8.5" fill="${body}" stroke="${L}" stroke-width="2.4"/>
     <ellipse cx="80" cy="105" rx="11" ry="8.5" fill="${body}" stroke="${L}" stroke-width="2.4"/>
-    <path d="M33 110 h4 M40 111 h4 M47 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M73 110 h4 M80 111 h4 M87 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
+    ${webs}${claws}
     <!-- neck, drawn behind the body and head -->
     <path d="M53 44 L67 44 L72 76 L48 76 Z" fill="${body}" stroke="${L}" stroke-width="2.4" stroke-linejoin="round"/>
     <!-- body -->
-    <ellipse cx="60" cy="84" rx="23" ry="22" fill="${body}" stroke="${L}" stroke-width="2.6"/>
+    <ellipse cx="60" cy="84" rx="23" ry="22" fill="${body}" stroke="${L}" stroke-width="${t.armour ? 3.4 : 2.6}"/>
     <ellipse cx="60" cy="89" rx="12.5" ry="14" fill="${t.belly}"/>
-    <path d="M50 82 h20 M50 90 h20 M52 97 h16" stroke="${L}" stroke-width="1.2" opacity="0.3"/>
-    ${glow}
+    ${bellyDetail}
+    ${shifting}
     <!-- horns, swept back -->
     <path d="M50 30 C 43 21, 37 11, 35 3 C 44 10, 52 20, 56 27 Z"
           fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
     <path d="M70 30 C 77 21, 83 11, 85 3 C 76 10, 68 20, 64 27 Z"
           fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
     <!-- head -->
-    <ellipse cx="60" cy="36" rx="16" ry="14" fill="${body}" stroke="${L}" stroke-width="2.6"/>
-    <ellipse cx="60" cy="47" rx="10" ry="7.5" fill="${t.belly}" stroke="${L}" stroke-width="2.2"/>
-    <circle cx="54" cy="34" r="3.4" fill="#1a1a2e"/>
-    <circle cx="66" cy="34" r="3.4" fill="#1a1a2e"/>
-    <circle cx="55.1" cy="32.9" r="1.2" fill="#fff"/>
-    <circle cx="67.1" cy="32.9" r="1.2" fill="#fff"/>
-    <circle cx="57" cy="45" r="1.4" fill="${L}"/>
-    <circle cx="63" cy="45" r="1.4" fill="${L}"/>
-    <path d="M55 50 Q60 54 65 50" fill="none" stroke="${L}" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="60" cy="${headCy}" rx="${headRx}" ry="${headRy}" fill="${body}" stroke="${L}" stroke-width="${t.armour ? 3.2 : 2.6}"/>
+    <ellipse cx="60" cy="${muzzleCy}" rx="${muzzleRx}" ry="${muzzleRy}" fill="${t.belly}" stroke="${L}" stroke-width="2.2"/>
+    ${snoutGlow}
+    <circle cx="${60 - eyeX}" cy="${eyeY}" r="3.4" fill="${eye}"/>
+    <circle cx="${60 + eyeX}" cy="${eyeY}" r="3.4" fill="${eye}"/>
+    <circle cx="${60 - eyeX}" cy="${eyeY}" r="1.5" fill="#1a1a2e"/>
+    <circle cx="${60 + eyeX}" cy="${eyeY}" r="1.5" fill="#1a1a2e"/>
+    <circle cx="${61 - eyeX}" cy="${eyeY - 1.2}" r="1.1" fill="#fff"/>
+    <circle cx="${61 + eyeX}" cy="${eyeY - 1.2}" r="1.1" fill="#fff"/>
+    ${nostrils}
+    <path d="M${60 - muzzleRx * 0.5} ${muzzleCy + muzzleRy * 0.5} Q60 ${muzzleCy + muzzleRy * 1.1} ${60 + muzzleRx * 0.5} ${muzzleCy + muzzleRy * 0.5}"
+          fill="none" stroke="${L}" stroke-width="2" stroke-linecap="round"/>
+    ${gills}
     ${spikes}`;
 }
 
-/** The RainWing gradient, scoped to one dragon instance. */
-function _rainGradient(uid) {
+/**
+ * RainWing gradients, scoped to one dragon instance.
+ *
+ * Bright and bird-of-paradise rather than pastel, and the eyes get their own
+ * gradient so they pick up whatever the scales are doing.
+ */
+function _dragonGradients(uid) {
   return `<linearGradient id="wof-rain-${uid}" x1="0" y1="0" x2="1" y2="1">` +
-    `<stop offset="0%" stop-color="#F2A9C8"/><stop offset="45%" stop-color="#F7D36B"/>` +
-    `<stop offset="100%" stop-color="#6FD3A8"/></linearGradient>`;
+      `<stop offset="0%" stop-color="#FF5FA2"/>` +
+      `<stop offset="28%" stop-color="#FF9E3D"/>` +
+      `<stop offset="52%" stop-color="#FFE04A"/>` +
+      `<stop offset="76%" stop-color="#4FD98A"/>` +
+      `<stop offset="100%" stop-color="#3FC6E0"/>` +
+    `</linearGradient>` +
+    `<linearGradient id="wof-eye-${uid}" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset="0%" stop-color="#5FD36B"/>` +
+      `<stop offset="50%" stop-color="#E8C63D"/>` +
+      `<stop offset="100%" stop-color="#4FA8D8"/>` +
+    `</linearGradient>`;
 }
 
 /* ---- Jigsaw geometry ----------------------------------------------------
@@ -370,7 +468,7 @@ function renderBuildCharacter(el, doneCount) {
   el.innerHTML =
     `<svg class="build-svg" viewBox="0 0 120 120" aria-label="${tribe.name} dragon">` +
       `<defs>` +
-        _rainGradient('main') +
+        _dragonGradients('main') +
         `<g id="wof-art">${_dragonArt(tribe, 'main')}</g>` +
         clips +
       `</defs>` +
@@ -408,7 +506,7 @@ function renderDragonRow(el, dates, target) {
     // much detail to read at slot size.
     slot.innerHTML =
       `<svg viewBox="6 0 108 76" aria-hidden="true">` +
-        `<defs>${_rainGradient(uid)}</defs>${_dragonArt(tribe, uid)}` +
+        `<defs>${_dragonGradients(uid)}</defs>${_dragonArt(tribe, uid)}` +
       `</svg>`;
 
     if (iso) {

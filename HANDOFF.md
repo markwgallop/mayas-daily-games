@@ -146,8 +146,22 @@ identically everywhere (system emoji fonts do not). Two roles:
   seven tribes is being built is chosen with `todayRNG()`, so it follows the same
   same-on-every-device rule the puzzles do.
 
-  The dragons are **original artwork** — a shared silhouette recoloured and re-detailed per
-  tribe (SkyWing, SeaWing, RainWing, NightWing, IceWing, MudWing, SandWing). They are
+  The dragons are **original artwork** — a shared silhouette with per-tribe anatomy
+  (SkyWing, SeaWing, RainWing, NightWing, IceWing, MudWing, SandWing). Tribe traits are
+  flags on the `DRAGON_TRIBES` entry, read by `_dragonArt()`, so adding one is a flag plus
+  a branch rather than a new drawing:
+
+  | Tribe | Traits, per Maya |
+  |---|---|
+  | MudWing  | `flatHead` (large flat head), `topNostrils` (nostrils on top of the snout), `armour` (thick plates, heavier outline), amber/gold `underscale`, brown eyes |
+  | SeaWing  | `gills` on the neck, `webbedClaws`, `glowStripes` on tail/snout/underbelly, green eyes |
+  | RainWing | `prehensileTail` (coiled), `shifting` colour patches over a bright bird-of-paradise gradient, `eye: 'SHIFTING'` for eyes that pick up the scales |
+
+  Draw order matters and has bitten once already: gills render *after* the body and webbing
+  *after* the feet, or they end up hidden underneath. Only a narrow strip of neck is
+  visible between muzzle and body — that is where the gills have to sit.
+
+  They are
   deliberately *not* Wings of Fire character art: this site is publicly deployed on Netlify,
   so shipping Scholastic's images would be redistribution rather than family use. If you
   ever want to swap in art you have the rights to, replace `_dragonArt()` — the jigsaw and
