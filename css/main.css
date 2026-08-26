@@ -592,10 +592,110 @@ table.data-table tr:last-child td { border-bottom: none; }
   text-align: center;
 }
 
+/* ---------- Cartoon characters ---------- */
+
+/* Pops on a correct answer, then removes itself. Must finish inside 800ms —
+   facts.html advances to the next question 900ms after a correct answer. */
+@keyframes character-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(var(--pop-tilt, -12deg)); }
+  35%  { opacity: 1; transform: scale(1.12) rotate(0deg); }
+  55%  { transform: scale(0.96) rotate(0deg); }
+  70%  { opacity: 1; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(1.05) translateY(-14px); }
+}
+
+/* Each piece of the build-up character as it is earned. */
+@keyframes part-reveal {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.celebrate-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+  overflow: hidden;
+}
+
+.celebrate-character {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  animation: character-pop 800ms ease-out forwards;
+  filter: drop-shadow(0 4px 10px var(--shadow));
+}
+.celebrate-character svg { width: 100%; height: 100%; display: block; }
+
+/* ---------- Landing page: build-up character ---------- */
+.build-character {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.build-svg {
+  width: 130px;
+  height: 143px;
+  display: block;
+  overflow: visible;
+}
+
+.build-part {
+  animation: part-reveal 420ms ease-out backwards;
+  transform-origin: 50% 50%;
+}
+.build-part.ghost {
+  opacity: 0.14;
+  animation: none;
+  filter: grayscale(1);
+}
+
+.build-caption {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-align: center;
+}
+
+/* ---------- Landing page: days-at-level pie ---------- */
+.progress-pie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px var(--shadow);
+  padding: 18px 24px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.progress-pie-svg { width: 96px; height: 96px; display: block; }
+
+.progress-pie-caption {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-light);
+  text-align: center;
+}
+.progress-pie-caption.ready { color: var(--correct); }
+
+.progress-pie-sub {
+  font-size: 0.76rem;
+  color: var(--text-light);
+  text-align: center;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 400px) {
   .tile-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
   .question-text { font-size: 2.4rem; }
   .card { padding: 24px 18px; }
   .numpad-btn { padding: 14px 0; font-size: 1.4rem; }
+  .celebrate-character { width: 84px; height: 84px; }
+  .build-svg { width: 112px; height: 123px; }
 }

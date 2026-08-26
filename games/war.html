@@ -274,6 +274,7 @@
   <script src="../js/seed.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
+  <script src="../js/characters.js"></script>
   <script>
     // ── Constants ──────────────────────────────────────────────────────────
     const TARGET_WINS = 7;   // first player to this many round wins ends the game
@@ -413,6 +414,7 @@
       }
 
       // Correct — resolve the round
+      celebrate();
       ansEl.textContent = typed;
       ansEl.className = 'eq-ans correct';
       feedback.textContent = 'Correct!';

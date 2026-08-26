@@ -160,6 +160,7 @@
   <script src="../js/seed.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
+  <script src="../js/characters.js"></script>
   <script>
     // Dice dot layout: 9 cells (3×3), indices 0-8
     const DICE_PATTERNS = {
@@ -339,6 +340,7 @@
 
       if (isCorrect) {
         score++;
+        celebrate();
         feedbackEl.textContent = 'Yes!';
         feedbackEl.className = 'feedback ok';
       } else {
@@ -364,7 +366,7 @@
       progressBar.style.width = '100%';
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
-      markDone('dice_flash', score, TOTAL);
+      markDone('dice_flash', score, TOTAL, level);
       saveResultAndReport({ game: 'dice_flash', score, total: TOTAL, details: { level, questions: details } });
     }
 

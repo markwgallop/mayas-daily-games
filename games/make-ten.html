@@ -82,6 +82,7 @@
   <script src="../js/seed.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
+  <script src="../js/characters.js"></script>
   <script>
     // ── Level config ───────────────────────────────────────────────────────
     // Make-a-Ten trains number bonds / complements. The global level scales the
@@ -204,6 +205,7 @@
 
       if (isCorrect) {
         score++;
+        celebrate();
         feedbackEl.textContent = 'Yes!';
         feedbackEl.className = 'feedback ok';
       } else {
@@ -231,7 +233,7 @@
       progressBar.style.width = '100%';
       document.getElementById('completionScore').textContent =
         `${score} out of ${TOTAL} correct`;
-      markDone('make_ten', score, TOTAL);
+      markDone('make_ten', score, TOTAL, level);
       saveResultAndReport({ game: 'make_ten', score, total: TOTAL, details: { level, questions: details } });
     }
 

@@ -162,6 +162,7 @@
   <script src="../js/seed.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
+  <script src="../js/characters.js"></script>
   <script>
     // ── SVG die faces ────────────────────────────────────────────────────
     // Dot positions as (cx,cy) — centred on a 72×72 viewBox, r=6
@@ -375,6 +376,7 @@
     function closeTiles() {
       const selSum = Array.from(selected).reduce((s,i) => s + (i+1), 0);
       if (selSum !== currentRoll) return;
+      celebrate();
 
       selected.forEach(idx => { open[idx] = false; });
       selected.clear();
@@ -431,7 +433,7 @@
       }
 
       // score = remaining tiles (lower = better); 0 = perfect
-      markDone('shut_box', remaining, maxScore);
+      markDone('shut_box', remaining, maxScore, level);
       saveResultAndReport({
         game: 'shut_box',
         score: remaining,

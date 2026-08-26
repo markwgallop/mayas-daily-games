@@ -107,6 +107,7 @@
   <script src="../js/seed.js"></script>
   <script src="../js/db.js"></script>
   <script src="../js/completion.js"></script>
+  <script src="../js/characters.js"></script>
   <script>
     // ── Fact pool ─────────────────────────────────────────────────────────
     // Band is fetched from Supabase settings on load; falls back to config.js default.
@@ -221,6 +222,7 @@
 
       if (isCorrect) {
         score++;
+        celebrate();
         ansEl.textContent = typed;
         ansEl.className = 'eq-ans correct';
         feedback.textContent = randomPraise();
@@ -268,7 +270,7 @@
           missed.map(d => `<span class="fact-chip">${d.fact} = ${d.answer}</span>`).join('');
       }
 
-      markDone('facts', score, TOTAL);
+      markDone('facts', score, TOTAL, BAND);
       saveResultAndReport({ game: 'facts', score, total: TOTAL, details: { band: BAND, questions: details } });
     }
 
