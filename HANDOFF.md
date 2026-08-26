@@ -175,18 +175,20 @@ It is written there, not on the landing page, so the day still counts if the tab
 on a completion screen. A fifth game rewrites the same marker, which is harmless. Card Duel
 has no level of its own and inherits the cached one via `cachedLevel()`.
 
-The landing page renders a five-slice donut counting the full days at the current level,
-plus a small medallion of the same ring in the top-right corner so the count is visible
-without scrolling. The medallion is `position: absolute` and therefore out of the flex
-flow entirely — nothing below it shifts to make room. Keep it that way if you move it.
+The landing page shows a row of dragons along the top — one per day she hit the goal, in
+the order she earned them, with faint empty slots for the days still to come. Each dragon
+is the one she actually built that day: `tribeForDate()` re-derives the tribe from that
+date's seed, which is why `fullDayDates()` returns the dates rather than just a count.
+Slots are cropped to a head-and-wings portrait (`viewBox="6 0 108 76"`) because a whole
+dragon is unreadable at 48px.
 
-**Deliberately restrained.** An earlier version put this wheel in both corners as well,
-which meant the same unclosable number stared out of the screen three times at once. The
-daily dragon is the loop Maya can actually close today, so it stays the hero of the page;
-the multi-day count gets one quiet medallion and the full wheel further down. If it ever
-starts feeling like a nag again, the medallion is the first thing to cut.
-At 5 it shows "Ready for the next level!" — **the level is not advanced automatically.**
-A parent still changes it in the portal, which keeps the child side INSERT-only.
+At 5 the caption reads "Ready for the next level" — **the level is not advanced
+automatically.** A parent still changes it in the portal, which keeps the child side
+INSERT-only.
+
+**This replaced a donut chart and a corner medallion.** Three copies of the same
+unclosable number was pressure, not progress. A collection that grows reads better than a
+gauge that is always short, and the daily dragon stays the loop she can actually close.
 
 `portal.html` shows the same count derived from the `results` table rather than
 localStorage, so it is accurate across devices.

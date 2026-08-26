@@ -25,7 +25,7 @@
 </head>
 <body>
   <main class="page">
-    <div class="day-medallion" id="dayMedallion"></div>
+    <div class="dragon-collection" id="dragonCollection"></div>
 
     <header class="page-header">
       <h1>Maya's Daily Games</h1>
@@ -76,8 +76,6 @@
       </a>
 
     </div>
-
-    <div class="progress-pie" id="progressPie"></div>
 
     <a href="portal.html" style="color: var(--text-light); font-size:0.82rem; margin-top:8px;">
       Parent portal &#8250;
@@ -135,25 +133,19 @@
 
     // Days-at-this-level pie. Render straight away from the cached level so the
     // page works offline, then correct it if Supabase reports a different one.
-    // Full size below the tiles, plus a small medallion in the top corner so the
-    // day count is visible without scrolling.
-    const pieTargets = [
-      { el: document.getElementById('progressPie'),  compact: false },
-      { el: document.getElementById('dayMedallion'), compact: true  },
-    ];
-    const paintPies = (level) => {
-      const days = countFullDays(level);
-      pieTargets.forEach(t => renderProgressPie(t.el, days, level, t.compact));
-    };
+    // The dragons she has collected at this level, along the top.
+    const collectionEl = document.getElementById('dragonCollection');
+    const paintCollection = (level) =>
+      renderDragonRow(collectionEl, fullDayDates(level), DAYS_PER_LEVEL);
 
     let shownLevel = cachedLevel();
-    paintPies(shownLevel);
+    paintCollection(shownLevel);
 
     fetchLevel().then(level => {
       if (level === shownLevel) return;
       cacheLevel(level);
       shownLevel = level;
-      paintPies(level);
+      paintCollection(level);
     });
   </script>
 </body>
