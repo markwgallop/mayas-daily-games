@@ -6,19 +6,22 @@ A complete static web app at `/home/markgallop/HomePi/claude-ws/maya-games/`:
 
 ```
 maya-games/
-├── index.html              # Landing page — 4 game tiles, completion checkmarks
-├── portal.html             # Parent portal — auth login + results views
+├── index.html              # Landing page — 5 game tiles, build-up character, days pie
+├── portal.html             # Parent portal — auth login + results views + level selector
 ├── css/main.css            # Shared styles (Nunito font, touch-first)
 ├── js/
 │   ├── config.js           # Supabase URL + anon key (placeholders to fill)
 │   ├── seed.js             # Mulberry32 PRNG, date→seed, seededShuffle/Pick/Int
-│   ├── db.js               # Supabase client + saveResult() — INSERT only
-│   └── completion.js       # localStorage "played today" tracker
+│   ├── db.js               # Supabase client + saveResult() — INSERT only, fetchLevel()
+│   ├── completion.js       # localStorage "played today" tracker + full-day markers
+│   ├── characters.js       # Inline-SVG cartoon art: celebrate() + renderBuildCharacter()
+│   └── progress.js         # countFullDays() + renderProgressPie() — landing page only
 ├── games/
 │   ├── facts.html          # 10 seeded addition/subtraction facts, numpad input
 │   ├── make-ten.html       # 8 seeded Make-a-Ten problems, 4-choice tap
 │   ├── shut-box.html       # Full Shut the Box — SVG dice, seeded rolls, subset-sum checker
-│   └── dice-flash.html     # 8 dot-pattern flashes, tap-to-reveal, 4 choices
+│   ├── dice-flash.html     # 8 dot-pattern flashes, tap-to-reveal, 4 choices
+│   └── war.html            # Card Duel — add two cards, first to 7 round wins
 ├── netlify.toml            # sed build command injects env vars into config.js
 ├── README.md               # Full setup instructions + acceptance test
 └── HANDOFF.md              # This file
@@ -120,7 +123,53 @@ Repo is live at: **https://github.com/markwgallop/mayas-daily-games**
 
 - **No timers or countdowns** anywhere in any game
 - **No streaks, leaderboards, or score comparisons**
-- **Bounded daily set** — fixed small number of problems per game (10 facts, 8 Make-a-Ten, 1 Shut the Box run, 8 Dice Flash), seeded by date
+- **Bounded daily set** — fixed small number of problems per game (10 facts, 8 Make-a-Ten, 1 Shut the Box run, 8 Dice Flash, first-to-7 Card Duel), seeded by date
 - **Same puzzle on every device on the same day** — `dateSeed()` in `js/seed.js` guarantees this
 - **Child side is INSERT-only** — `db.js` never calls `.select()`; RLS enforces this at the DB level too
 - **Portal deduplicates** on `(game, play_date)` latest-wins — two submissions from two devices produce two rows; the portal filters them client-side in `portal.html`
+
+---
+
+## Engagement features (added Aug 2026)
+
+### Cartoon characters — `js/characters.js`
+
+All art is inline SVG built in JS. No image files, no extra requests, and it renders
+identically everywhere (system emoji fonts do not). Two roles:
+
+- `celebrate()` — pops a random happy character at one of six screen positions on every
+  correct answer, then removes itself. Called from all five games. **The animation must
+  finish inside 800ms** — `facts.html` advances to the next question 900ms after a correct
+  answer, and the pop must be gone by then.
+- `renderBuildCharacter(el, doneCount)` — the landing page character, assembled one part
+  per completed game (5 parts, 5 games). Un-earned parts show as faint ghosts. Which
+  character is being built is chosen with `todayRNG()`, so it follows the same
+  same-on-every-device rule the puzzles do.
+
+Shut the Box has no per-question right/wrong, so `celebrate()` fires when a valid set of
+tiles is closed — the equivalent "you got it" event.
+
+### Days-at-level progress — `js/progress.js` and the `maya_fullday_` keys
+
+`markDone()` writes `maya_fullday_YYYY-MM-DD → <level>` once every game is done for the
+day. It is written there, not on the landing page, so the day still counts if the tab is
+closed on a completion screen. Card Duel has no level of its own and inherits the cached
+one via `cachedLevel()`.
+
+The landing page renders a five-slice donut counting the full days at the current level.
+At 5 it shows "Ready for the next level!" — **the level is not advanced automatically.**
+A parent still changes it in the portal, which keeps the child side INSERT-only.
+
+`portal.html` shows the same count derived from the `results` table rather than
+localStorage, so it is accurate across devices.
+
+**On the "no streaks" constraint above:** this counter is deliberately *not* a streak. It
+is cumulative, gaps are allowed, and a missed day costs nothing — it just isn't counted.
+It resets only when the level changes, because the day markers record the level they were
+played at. Nothing anywhere shows a "current streak" that can be broken.
+
+### Note: `index.html` now depends on Supabase
+
+The landing page loads `db.js` to call `fetchLevel()`. It renders the pie immediately from
+the localStorage-cached level and only re-renders if Supabase reports a different one, so
+the page still works fully offline. If you change this, keep the cached-first ordering.

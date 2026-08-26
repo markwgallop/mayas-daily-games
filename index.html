@@ -30,6 +30,8 @@
       <p class="subtitle date-label" id="dateLabel"></p>
     </header>
 
+    <div class="build-character" id="buildCharacter"></div>
+
     <div class="all-done-banner" id="allDoneBanner">
       All done for today! Great work! &#127775;
     </div>
@@ -73,14 +75,20 @@
 
     </div>
 
+    <div class="progress-pie" id="progressPie"></div>
+
     <a href="portal.html" style="color: var(--text-light); font-size:0.82rem; margin-top:8px;">
       Parent portal &#8250;
     </a>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/seed.js"></script>
+  <script src="js/db.js"></script>
   <script src="js/completion.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/progress.js"></script>
   <script>
     // Date label
     const now = new Date();
@@ -100,20 +108,39 @@
     };
 
     let allDone = true;
+    let doneCount = 0;
     for (const [game, result] of Object.entries(done)) {
       const tile = document.getElementById(`tile-${game}`);
       const scoreEl = document.getElementById(`score-${game}`);
       if (result) {
         tile.classList.add('done');
         scoreEl.textContent = scoreLabels[game](result.score, result.total);
+        doneCount++;
       } else {
         allDone = false;
       }
     }
 
+    // Today's character gains a piece for each game finished.
+    renderBuildCharacter(document.getElementById('buildCharacter'), doneCount);
+
     if (allDone) {
       document.getElementById('allDoneBanner').classList.add('visible');
+      celebrate();
     }
+
+    // Days-at-this-level pie. Render straight away from the cached level so the
+    // page works offline, then correct it if Supabase reports a different one.
+    const pieEl = document.getElementById('progressPie');
+    let shownLevel = cachedLevel();
+    renderProgressPie(pieEl, countFullDays(shownLevel), shownLevel);
+
+    fetchLevel().then(level => {
+      if (level === shownLevel) return;
+      cacheLevel(level);
+      shownLevel = level;
+      renderProgressPie(pieEl, countFullDays(level), level);
+    });
   </script>
 </body>
 </html>
