@@ -143,6 +143,7 @@
           <option value="5">Level 5 — Within 100</option>
         </select>
       </div>
+      <div id="levelProgress" style="width:100%; max-width:700px; margin-top:-14px; font-size:0.82rem; font-weight:700; color:var(--text-light);"></div>
 
       <!-- Today at a glance -->
       <div style="width:100%; max-width:700px;">
@@ -236,6 +237,7 @@
     async function saveBand() {
       const val = document.getElementById('bandSelect').value;
       await db.from('settings').upsert({ key: 'facts_band', value: val });
+      renderLevelProgress();
     }
 
     db.auth.onAuthStateChange(async (event, session) => {
@@ -287,6 +289,7 @@
         return true;
       });
 
+      renderLevelProgress();
       renderToday();
       renderMissedFacts();
       renderByDay();
@@ -318,6 +321,49 @@
     function formatDate(isoDate) {
       const d = new Date(isoDate + 'T00:00:00');
       return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    // ── Days at the current level ─────────────────────────────────────────
+    // Maya moves up a level after DAYS_PER_LEVEL days on which she completed
+    // every game. This mirrors the pie chart she sees on the landing page,
+    // but is derived from the database rather than her device's localStorage.
+    const DAYS_PER_LEVEL = 5;
+    const ALL_GAMES = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
+
+    /** The level a day was played at — games store it as details.level, facts as details.band. */
+    function dayLevel(rows) {
+      for (const row of rows) {
+        const d = row.details;
+        if (!d || Array.isArray(d)) continue;
+        const lvl = d.level !== undefined ? d.level : d.band;
+        if (lvl !== undefined && lvl !== null) return parseInt(lvl, 10);
+      }
+      return null;
+    }
+
+    function renderLevelProgress() {
+      const el = document.getElementById('levelProgress');
+      const current = parseInt(document.getElementById('bandSelect').value, 10);
+
+      const byDate = {};
+      allRows.forEach(row => {
+        if (!byDate[row.play_date]) byDate[row.play_date] = [];
+        byDate[row.play_date].push(row);
+      });
+
+      let days = 0;
+      Object.values(byDate).forEach(rows => {
+        const played = new Set(rows.map(r => r.game));
+        if (ALL_GAMES.some(g => !played.has(g))) return;
+        if (dayLevel(rows) === current) days++;
+      });
+
+      if (days >= DAYS_PER_LEVEL) {
+        const next = current < 5 ? `Ready for Level ${current + 1}.` : 'Level 5 is the top level.';
+        el.innerHTML = `<span style="color:var(--correct);">&#11088; ${days} full days on Level ${current} &mdash; ${next}</span>`;
+      } else {
+        el.textContent = `${days} of ${DAYS_PER_LEVEL} full days on Level ${current} (all ${ALL_GAMES.length} games in a day).`;
+      }
     }
 
     // ── Today summary ─────────────────────────────────────────────────────
