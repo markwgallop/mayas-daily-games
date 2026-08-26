@@ -7,8 +7,9 @@
  *
  * Two roles:
  *   - CELEBRATION_CHARACTERS — one pops up on every correct answer, in games.
- *   - BUILD_CHARACTERS       — one is assembled a piece at a time on the
- *                              landing page, one piece per completed game.
+ *   - DRAGON_TRIBES          — one dragon is assembled from four jigsaw
+ *                              pieces on the landing page, one piece per
+ *                              completed game.
  *
  * Depends on: seed.js (todayRNG, seededInt) for picking the day's build character.
  */
@@ -109,106 +110,146 @@ const CELEBRATION_CHARACTERS = [
 ];
 
 /* =========================================================
-   Build-up characters — assembled a piece at a time.
-   Four parts each, one per game of the daily goal, ordered so a
-   partial build still reads as a character under construction
-   rather than floating bits. Shared viewBox "0 0 100 110".
+   Build-up dragons — one per tribe, cut into four jigsaw pieces.
+
+   Original artwork, not traced from anything: a shared dragon
+   silhouette recoloured and re-detailed per tribe. The whole dragon is
+   drawn once into <defs>, then four clipped <use> elements cut it into
+   interlocking quarters, so the pieces always fit together perfectly.
    ========================================================= */
 
-const BUILD_CHARACTERS = [
-  {
-    name: 'Robot',
-    parts: [
-      // 1. Legs
-      `<g><rect x="34" y="80" width="12" height="20" rx="4" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/>
-          <rect x="54" y="80" width="12" height="20" rx="4" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/>
-          <rect x="28" y="98" width="20" height="8" rx="4" fill="#3c5872"/>
-          <rect x="52" y="98" width="20" height="8" rx="4" fill="#3c5872"/></g>`,
-      // 2. Body
-      `<g><rect x="28" y="44" width="44" height="38" rx="10" fill="#9BB7D4" stroke="#3c5872" stroke-width="3"/>
-          <circle cx="42" cy="60" r="4" fill="#F5A623"/>
-          <circle cx="58" cy="60" r="4" fill="#5CB85C"/>
-          <rect x="38" y="70" width="24" height="5" rx="2.5" fill="#3c5872"/></g>`,
-      // 3. Arms
-      `<g><rect x="10" y="48" width="12" height="28" rx="6" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/>
-          <rect x="78" y="48" width="12" height="28" rx="6" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/></g>`,
-      // 4. Head + antenna
-      `<g><path d="M50 14 V4" stroke="#3c5872" stroke-width="3.5" stroke-linecap="round"/>
-          <circle cx="50" cy="3" r="5" fill="#E74C3C" stroke="#8c2a20" stroke-width="2"/>
-          <rect x="30" y="14" width="40" height="30" rx="9" fill="#B7CDE3" stroke="#3c5872" stroke-width="3"/>
-          <rect x="38" y="24" width="9" height="9" rx="3" fill="#1a1a2e"/>
-          <rect x="53" y="24" width="9" height="9" rx="3" fill="#1a1a2e"/>
-          <path d="M40 37 Q50 44 60 37" fill="none" stroke="#3c5872" stroke-width="3" stroke-linecap="round"/></g>`,
-    ],
-  },
-  {
-    name: 'Rocket',
-    parts: [
-      // 1. Body
-      `<g><path d="M34 34 H66 V84 H34 Z" fill="#EDF1F5" stroke="#3c5872" stroke-width="3" stroke-linejoin="round"/></g>`,
-      // 2. Fins + flame
-      `<g><path d="M34 62 L16 90 L34 84 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M66 62 L84 90 L66 84 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M38 84 Q50 108 62 84 Q50 92 38 84 Z" fill="#F5A623" stroke="#c47a06" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M45 86 Q50 98 55 86 Q50 90 45 86 Z" fill="#FFE08A"/></g>`,
-      // 3. Window + face
-      `<g><circle cx="50" cy="50" r="13" fill="#7FC4E8" stroke="#3c5872" stroke-width="3"/>
-          <circle cx="45" cy="48" r="2.8" fill="#1a1a2e"/>
-          <circle cx="55" cy="48" r="2.8" fill="#1a1a2e"/>
-          <path d="M44 56 Q50 61 56 56" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round"/></g>`,
-      // 4. Nose cone
-      `<g><path d="M50 4 L68 34 H32 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/></g>`,
-    ],
-  },
-  {
-    name: 'Cat',
-    parts: [
-      // 1. Body + paws
-      `<g><ellipse cx="36" cy="98" rx="11" ry="7" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/>
-          <ellipse cx="64" cy="98" rx="11" ry="7" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/>
-          <ellipse cx="50" cy="74" rx="26" ry="24" fill="#F5A623" stroke="#8a5a10" stroke-width="3"/>
-          <ellipse cx="50" cy="80" rx="14" ry="15" fill="#FFF0D0"/></g>`,
-      // 3. Tail
-      `<g><path d="M76 84 Q94 78 88 58 Q86 50 79 52" fill="none" stroke="#8a5a10" stroke-width="9" stroke-linecap="round"/>
-          <path d="M76 84 Q94 78 88 58 Q86 50 79 52" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/></g>`,
-      // 4. Head
-      `<g><path d="M30 32 L27 12 L44 23 Z" fill="#F5A623" stroke="#8a5a10" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M70 32 L73 12 L56 23 Z" fill="#F5A623" stroke="#8a5a10" stroke-width="3" stroke-linejoin="round"/>
-          <circle cx="50" cy="40" r="23" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/>
-          <circle cx="42" cy="36" r="3.5" fill="#1a1a2e"/>
-          <circle cx="58" cy="36" r="3.5" fill="#1a1a2e"/>
-          <path d="M44 46 Q50 53 56 46" fill="none" stroke="#1a1a2e" stroke-width="3" stroke-linecap="round"/></g>`,
-      // 5. Bow
-      `<g><path d="M50 60 L36 53 V67 Z" fill="#D64545" stroke="#7d2020" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M50 60 L64 53 V67 Z" fill="#D64545" stroke="#7d2020" stroke-width="2.5" stroke-linejoin="round"/>
-          <circle cx="50" cy="60" r="4.5" fill="#E8703A" stroke="#7d2020" stroke-width="2.5"/></g>`,
-    ],
-  },
-  {
-    name: 'Dragon',
-    parts: [
-      // 1. Body + tail
-      `<g><path d="M62 88 Q90 92 88 68 Q87 60 80 60" fill="none" stroke="#2f7a2f" stroke-width="10" stroke-linecap="round"/>
-          <path d="M62 88 Q90 92 88 68 Q87 60 80 60" fill="none" stroke="#6FCF6F" stroke-width="6" stroke-linecap="round"/>
-          <ellipse cx="48" cy="76" rx="26" ry="23" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/>
-          <ellipse cx="48" cy="82" rx="14" ry="14" fill="#C8F0C8"/>
-          <ellipse cx="32" cy="97" rx="9" ry="6" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/>
-          <ellipse cx="62" cy="97" rx="9" ry="6" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/></g>`,
-      // 3. Wings
-      `<g><path d="M28 62 Q4 44 10 30 Q24 36 32 52 Z" fill="#9BE59B" stroke="#2f7a2f" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M68 62 Q92 44 86 30 Q72 36 64 52 Z" fill="#9BE59B" stroke="#2f7a2f" stroke-width="3" stroke-linejoin="round"/></g>`,
-      // 4. Head
-      `<g><path d="M34 26 L31 8 L46 19 Z" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M64 26 L67 8 L52 19 Z" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3" stroke-linejoin="round"/>
-          <ellipse cx="49" cy="36" rx="24" ry="21" fill="#7ED97E" stroke="#2f7a2f" stroke-width="3"/>
-          <circle cx="41" cy="32" r="4" fill="#1a1a2e"/>
-          <circle cx="57" cy="32" r="4" fill="#1a1a2e"/>
-          <path d="M42 45 Q49 52 56 45" fill="none" stroke="#2f7a2f" stroke-width="3" stroke-linecap="round"/></g>`,
-      // 5. Fire breath
-      `<g><path d="M73 40 Q92 34 96 44 Q88 42 84 48 Q80 40 73 40 Z" fill="#F5A623" stroke="#c47a06" stroke-width="2.5" stroke-linejoin="round"/>
-          <circle cx="90" cy="52" r="3.5" fill="#FFD34E"/></g>`,
-    ],
-  },
+/** Tribe palettes and the accent detail that makes each one recognisable. */
+const DRAGON_TRIBES = [
+  { name: 'SkyWing',   body: '#E8562F', belly: '#F7C08A', wing: '#F08A5D', line: '#8C2A10', horn: '#F7C08A', accent: 'none'    },
+  { name: 'SeaWing',   body: '#2E9B8F', belly: '#9FE5DC', wing: '#4FBFB0', line: '#12564F', horn: '#9FE5DC', accent: 'glow'    },
+  { name: 'RainWing',  body: 'url(#wof-rain)', belly: '#FFE9A8', wing: '#8AD9C0', line: '#7A3E8C', horn: '#FFE9A8', accent: 'none' },
+  { name: 'NightWing', body: '#3B3355', belly: '#6E6390', wing: '#4C4470', line: '#1A1630', horn: '#8E85B5', accent: 'stars'   },
+  { name: 'IceWing',   body: '#CFE6F5', belly: '#FFFFFF', wing: '#A9D3EC', line: '#4A7EA0', horn: '#FFFFFF', accent: 'spikes'  },
+  { name: 'MudWing',   body: '#8C6239', belly: '#D9B683', wing: '#A67C4E', line: '#4E3417', horn: '#D9B683', accent: 'none'    },
+  { name: 'SandWing',  body: '#E3C77E', belly: '#F7EBC4', wing: '#EAD69F', line: '#8A6B22', horn: '#F7EBC4', accent: 'barb'    },
+];
+
+/** The full dragon, drawn once on a 0 0 120 120 canvas. */
+function _dragonArt(t) {
+  const L = t.line;
+
+  // Wings sweep up and out from the shoulders to the top corners, with a
+  // scalloped trailing edge and finger bones — the thing that makes a
+  // silhouette read as "dragon" rather than "bat-eared animal".
+  const wing = (flip) => {
+    const g = flip ? 'transform="translate(120,0) scale(-1,1)"' : '';
+    return `<g ${g}>
+      <path d="M50 76 C 38 60, 20 34, 3 20
+               C 7 35, 10 45, 13 53
+               Q 23 53, 28 60
+               Q 35 62, 39 67
+               Q 45 72, 50 76 Z"
+            fill="${t.wing}" stroke="${L}" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M50 76 L 3 20 M50 76 L 13 53 M50 76 L 28 60 M50 76 L 39 67"
+            fill="none" stroke="${L}" stroke-width="1.5" opacity="0.55"/>
+    </g>`;
+  };
+
+  const glow = t.accent === 'glow' ? `
+    <circle cx="48" cy="80" r="2.4" fill="#BFFFF4"/><circle cx="48" cy="92" r="2.4" fill="#BFFFF4"/>
+    <circle cx="72" cy="80" r="2.4" fill="#BFFFF4"/><circle cx="72" cy="92" r="2.4" fill="#BFFFF4"/>
+    <circle cx="22" cy="38" r="2.2" fill="#BFFFF4"/><circle cx="98" cy="38" r="2.2" fill="#BFFFF4"/>
+    <circle cx="32" cy="52" r="1.8" fill="#BFFFF4"/><circle cx="88" cy="52" r="1.8" fill="#BFFFF4"/>` : '';
+
+  const stars = t.accent === 'stars' ? `
+    <circle cx="20" cy="34" r="1.8" fill="#E8E2FF"/><circle cx="30" cy="50" r="1.4" fill="#E8E2FF"/>
+    <circle cx="12" cy="26" r="1.3" fill="#E8E2FF"/><circle cx="100" cy="34" r="1.8" fill="#E8E2FF"/>
+    <circle cx="90" cy="50" r="1.4" fill="#E8E2FF"/><circle cx="108" cy="26" r="1.3" fill="#E8E2FF"/>` : '';
+
+  // IceWing: a spined crest down the neck and along the tail.
+  const spikes = t.accent === 'spikes' ? `
+    <path d="M60 20 L57 27 L63 27 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M88 100 L94 96 L92 103 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M100 110 L107 108 L103 114 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>` : '';
+
+  // SandWing: the barbed tail tip.
+  const barb = t.accent === 'barb' ? `
+    <path d="M108 114 L119 108 L112 120 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.8" stroke-linejoin="round"/>` : '';
+
+  return `
+    ${wing(false)}${wing(true)}
+    ${stars}
+    <!-- tail, sweeping out to the bottom-right -->
+    <path d="M78 98 C 98 102, 109 109, 111 117" fill="none" stroke="${L}" stroke-width="9.5" stroke-linecap="round"/>
+    <path d="M78 98 C 98 102, 109 109, 111 117" fill="none" stroke="${t.body}" stroke-width="6" stroke-linecap="round"/>
+    ${barb}
+    <!-- hind legs -->
+    <ellipse cx="40" cy="105" rx="11" ry="8.5" fill="${t.body}" stroke="${L}" stroke-width="2.4"/>
+    <ellipse cx="80" cy="105" rx="11" ry="8.5" fill="${t.body}" stroke="${L}" stroke-width="2.4"/>
+    <path d="M33 110 h4 M40 111 h4 M47 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M73 110 h4 M80 111 h4 M87 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
+    <!-- neck, drawn behind the body and head -->
+    <path d="M53 44 L67 44 L72 76 L48 76 Z" fill="${t.body}" stroke="${L}" stroke-width="2.4" stroke-linejoin="round"/>
+    <!-- body -->
+    <ellipse cx="60" cy="84" rx="23" ry="22" fill="${t.body}" stroke="${L}" stroke-width="2.6"/>
+    <ellipse cx="60" cy="89" rx="12.5" ry="14" fill="${t.belly}"/>
+    <path d="M50 82 h20 M50 90 h20 M52 97 h16" stroke="${L}" stroke-width="1.2" opacity="0.3"/>
+    ${glow}
+    <!-- horns, swept back -->
+    <path d="M50 30 C 43 21, 37 11, 35 3 C 44 10, 52 20, 56 27 Z"
+          fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="M70 30 C 77 21, 83 11, 85 3 C 76 10, 68 20, 64 27 Z"
+          fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
+    <!-- head -->
+    <ellipse cx="60" cy="36" rx="16" ry="14" fill="${t.body}" stroke="${L}" stroke-width="2.6"/>
+    <ellipse cx="60" cy="47" rx="10" ry="7.5" fill="${t.belly}" stroke="${L}" stroke-width="2.2"/>
+    <circle cx="54" cy="34" r="3.4" fill="#1a1a2e"/>
+    <circle cx="66" cy="34" r="3.4" fill="#1a1a2e"/>
+    <circle cx="55.1" cy="32.9" r="1.2" fill="#fff"/>
+    <circle cx="67.1" cy="32.9" r="1.2" fill="#fff"/>
+    <circle cx="57" cy="45" r="1.4" fill="${L}"/>
+    <circle cx="63" cy="45" r="1.4" fill="${L}"/>
+    <path d="M55 50 Q60 54 65 50" fill="none" stroke="${L}" stroke-width="2" stroke-linecap="round"/>
+    ${spikes}`;
+}
+
+/* ---- Jigsaw geometry ----------------------------------------------------
+   The four pieces share their seams: each interior edge is generated by the
+   same helper and simply traversed in the opposite direction by the
+   neighbouring piece, so the cuts interlock exactly with no gaps.        */
+
+const _JIG_T = 9;    // tab half-height
+const _JIG_B = 15;   // how far the tab bulges
+
+/** Vertical seam at x=60, travelling down from y0. `dir` bulges the tab +x or -x. */
+function _vSeamDown(y0, dir) {
+  const m = y0 + 30, b = 60 + dir * _JIG_B;
+  return `L 60 ${m - _JIG_T} C ${b} ${m - 13}, ${b} ${m + 13}, 60 ${m + _JIG_T} L 60 ${y0 + 60}`;
+}
+/** The same seam travelled upward, for the neighbouring piece. */
+function _vSeamUp(y0, dir) {
+  const m = y0 + 30, b = 60 + dir * _JIG_B;
+  return `L 60 ${m + _JIG_T} C ${b} ${m + 13}, ${b} ${m - 13}, 60 ${m - _JIG_T} L 60 ${y0}`;
+}
+/** Horizontal seam at y=60, travelling right from x0. `dir` bulges the tab +y or -y. */
+function _hSeamRight(x0, dir) {
+  const m = x0 + 30, b = 60 + dir * _JIG_B;
+  return `L ${m - _JIG_T} 60 C ${m - 13} ${b}, ${m + 13} ${b}, ${m + _JIG_T} 60 L ${x0 + 60} 60`;
+}
+/** The same seam travelled leftward, for the neighbouring piece. */
+function _hSeamLeft(x0, dir) {
+  const m = x0 + 30, b = 60 + dir * _JIG_B;
+  return `L ${m + _JIG_T} 60 C ${m + 13} ${b}, ${m - 13} ${b}, ${m - _JIG_T} 60 L ${x0} 60`;
+}
+
+/**
+ * The four pieces, clockwise from top-left, each with the direction it flies
+ * in from and the point it pivots around as it locks into place.
+ */
+const JIGSAW_PIECES = [
+  { d: `M 0 0 L 60 0 ${_vSeamDown(0, 1)} ${_hSeamLeft(0, 1)} L 0 0 Z`,
+    fly: { x: -95, y: -25, rot: -20 }, origin: '30px 30px' },
+  { d: `M 60 0 L 120 0 L 120 60 ${_hSeamLeft(60, -1)} ${_vSeamUp(0, 1)} Z`,
+    fly: { x:  25, y: -95, rot:  20 }, origin: '90px 30px' },
+  { d: `M 60 60 ${_hSeamRight(60, -1)} L 120 120 L 60 120 ${_vSeamUp(60, -1)} Z`,
+    fly: { x:  95, y:  25, rot:  20 }, origin: '90px 90px' },
+  { d: `M 0 60 ${_hSeamRight(0, 1)} ${_vSeamDown(60, -1)} L 0 120 L 0 60 Z`,
+    fly: { x: -25, y:  95, rot: -20 }, origin: '30px 90px' },
 ];
 
 /* =========================================================
@@ -281,30 +322,47 @@ function celebrate() {
    ========================================================= */
 
 /**
- * Render today's build-up character with `doneCount` of its 5 parts earned.
- * Un-earned parts show as faint ghosts so the goal is visible.
+ * Render today's dragon with `doneCount` of its four jigsaw pieces earned.
+ * Earned pieces fly in from their edge and lock into place; the rest sit as
+ * faint ghosts so the shape of what's coming is visible.
  *
- * The character is chosen with the daily seed, so every device shows the same
- * one on the same day — the same rule the puzzles follow.
+ * The tribe is chosen with the daily seed, so every device shows the same
+ * dragon on the same day — the same rule the puzzles follow.
  */
 function renderBuildCharacter(el, doneCount) {
   const rng = todayRNG(7331);
-  const character = BUILD_CHARACTERS[seededInt(0, BUILD_CHARACTERS.length - 1, rng)];
-  const total = character.parts.length;
+  const tribe = DRAGON_TRIBES[seededInt(0, DRAGON_TRIBES.length - 1, rng)];
+  const total = JIGSAW_PIECES.length;
   const earned = Math.max(0, Math.min(doneCount, total));
 
-  const parts = character.parts.map((part, i) => {
-    const cls = i < earned ? 'build-part' : 'build-part ghost';
-    // Stagger each earned piece so the build reads as an assembly, not a flash.
-    const delay = i < earned ? ` style="animation-delay:${i * 90}ms"` : '';
-    return `<g class="${cls}"${delay}>${part}</g>`;
+  const clips = JIGSAW_PIECES
+    .map((p, i) => `<clipPath id="wof-piece-${i}"><path d="${p.d}"/></clipPath>`)
+    .join('');
+
+  const pieces = JIGSAW_PIECES.map((p, i) => {
+    const on = i < earned;
+    const style = `transform-box:view-box;transform-origin:${p.origin};` +
+      (on ? `--fly-x:${p.fly.x}px;--fly-y:${p.fly.y}px;--fly-rot:${p.fly.rot}deg;` +
+            `animation-delay:${i * 130}ms;` : '');
+    return `<g class="build-part${on ? '' : ' ghost'}" clip-path="url(#wof-piece-${i})" ` +
+           `style="${style}"><use href="#wof-art"/></g>`;
   }).join('');
 
   const caption = earned >= total
-    ? `${character.name} complete! All ${total} games done &#127881;`
+    ? `${tribe.name} complete! All ${total} games done &#127881;`
     : `${earned} of ${total} pieces &mdash; play a game to add another!`;
 
   el.innerHTML =
-    `<svg class="build-svg" viewBox="0 0 100 110" aria-label="${character.name}">${parts}</svg>` +
+    `<svg class="build-svg" viewBox="0 0 120 120" aria-label="${tribe.name} dragon">` +
+      `<defs>` +
+        `<linearGradient id="wof-rain" x1="0" y1="0" x2="1" y2="1">` +
+          `<stop offset="0%" stop-color="#F2A9C8"/><stop offset="45%" stop-color="#F7D36B"/>` +
+          `<stop offset="100%" stop-color="#6FD3A8"/>` +
+        `</linearGradient>` +
+        `<g id="wof-art">${_dragonArt(tribe)}</g>` +
+        clips +
+      `</defs>` +
+      pieces +
+    `</svg>` +
     `<p class="build-caption">${caption}</p>`;
 }
