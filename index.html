@@ -107,7 +107,6 @@
       war:        (s, t) => `${s} rounds won`,
     };
 
-    let allDone = true;
     let doneCount = 0;
     for (const [game, result] of Object.entries(done)) {
       const tile = document.getElementById(`tile-${game}`);
@@ -116,16 +115,19 @@
         tile.classList.add('done');
         scoreEl.textContent = scoreLabels[game](result.score, result.total);
         doneCount++;
-      } else {
-        allDone = false;
       }
     }
 
-    // Today's character gains a piece for each game finished.
+    // Today's character gains a piece for each game finished, up to the goal.
     renderBuildCharacter(document.getElementById('buildCharacter'), doneCount);
 
-    if (allDone) {
-      document.getElementById('allDoneBanner').classList.add('visible');
+    // Four games is the goal; a fifth is a bonus.
+    if (doneCount >= GAMES_PER_DAY) {
+      const banner = document.getElementById('allDoneBanner');
+      banner.innerHTML = doneCount > GAMES_PER_DAY
+        ? 'Every single game done today! Superstar! &#127775;'
+        : 'All done for today! Great work! &#127775;';
+      banner.classList.add('visible');
       celebrate();
     }
 

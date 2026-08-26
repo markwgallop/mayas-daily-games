@@ -142,19 +142,23 @@ identically everywhere (system emoji fonts do not). Two roles:
   finish inside 800ms** — `facts.html` advances to the next question 900ms after a correct
   answer, and the pop must be gone by then.
 - `renderBuildCharacter(el, doneCount)` — the landing page character, assembled one part
-  per completed game (5 parts, 5 games). Un-earned parts show as faint ghosts. Which
-  character is being built is chosen with `todayRNG()`, so it follows the same
-  same-on-every-device rule the puzzles do.
+  per completed game (4 parts). Un-earned parts show as faint ghosts. Which character is
+  being built is chosen with `todayRNG()`, so it follows the same same-on-every-device
+  rule the puzzles do.
 
 Shut the Box has no per-question right/wrong, so `celebrate()` fires when a valid set of
 tiles is closed — the equivalent "you got it" event.
 
 ### Days-at-level progress — `js/progress.js` and the `maya_fullday_` keys
 
-`markDone()` writes `maya_fullday_YYYY-MM-DD → <level>` once every game is done for the
-day. It is written there, not on the landing page, so the day still counts if the tab is
-closed on a completion screen. Card Duel has no level of its own and inherits the cached
-one via `cachedLevel()`.
+**The daily goal is any 4 of the 5 games** (`GAMES_PER_DAY` in `completion.js`). Maya can
+skip whichever one she doesn't fancy; a fifth is a bonus that earns a different banner but
+does not double-count.
+
+`markDone()` writes `maya_fullday_YYYY-MM-DD → <level>` once the goal is met for the day.
+It is written there, not on the landing page, so the day still counts if the tab is closed
+on a completion screen. A fifth game rewrites the same marker, which is harmless. Card Duel
+has no level of its own and inherits the cached one via `cachedLevel()`.
 
 The landing page renders a five-slice donut counting the full days at the current level.
 At 5 it shows "Ready for the next level!" — **the level is not advanced automatically.**

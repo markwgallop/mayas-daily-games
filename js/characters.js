@@ -110,9 +110,9 @@ const CELEBRATION_CHARACTERS = [
 
 /* =========================================================
    Build-up characters — assembled a piece at a time.
-   Five parts each, ordered so a partial build still reads as
-   a character under construction rather than floating bits.
-   Shared viewBox "0 0 100 110".
+   Four parts each, one per game of the daily goal, ordered so a
+   partial build still reads as a character under construction
+   rather than floating bits. Shared viewBox "0 0 100 110".
    ========================================================= */
 
 const BUILD_CHARACTERS = [
@@ -132,14 +132,13 @@ const BUILD_CHARACTERS = [
       // 3. Arms
       `<g><rect x="10" y="48" width="12" height="28" rx="6" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/>
           <rect x="78" y="48" width="12" height="28" rx="6" fill="#7B96B0" stroke="#3c5872" stroke-width="3"/></g>`,
-      // 4. Head
-      `<g><rect x="30" y="14" width="40" height="30" rx="9" fill="#B7CDE3" stroke="#3c5872" stroke-width="3"/>
+      // 4. Head + antenna
+      `<g><path d="M50 14 V4" stroke="#3c5872" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="50" cy="3" r="5" fill="#E74C3C" stroke="#8c2a20" stroke-width="2"/>
+          <rect x="30" y="14" width="40" height="30" rx="9" fill="#B7CDE3" stroke="#3c5872" stroke-width="3"/>
           <rect x="38" y="24" width="9" height="9" rx="3" fill="#1a1a2e"/>
           <rect x="53" y="24" width="9" height="9" rx="3" fill="#1a1a2e"/>
           <path d="M40 37 Q50 44 60 37" fill="none" stroke="#3c5872" stroke-width="3" stroke-linecap="round"/></g>`,
-      // 5. Antenna
-      `<g><path d="M50 14 V4" stroke="#3c5872" stroke-width="3.5" stroke-linecap="round"/>
-          <circle cx="50" cy="3" r="5" fill="#E74C3C" stroke="#8c2a20" stroke-width="2"/></g>`,
     ],
   },
   {
@@ -147,9 +146,11 @@ const BUILD_CHARACTERS = [
     parts: [
       // 1. Body
       `<g><path d="M34 34 H66 V84 H34 Z" fill="#EDF1F5" stroke="#3c5872" stroke-width="3" stroke-linejoin="round"/></g>`,
-      // 2. Fins
+      // 2. Fins + flame
       `<g><path d="M34 62 L16 90 L34 84 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/>
-          <path d="M66 62 L84 90 L66 84 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/></g>`,
+          <path d="M66 62 L84 90 L66 84 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M38 84 Q50 108 62 84 Q50 92 38 84 Z" fill="#F5A623" stroke="#c47a06" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M45 86 Q50 98 55 86 Q50 90 45 86 Z" fill="#FFE08A"/></g>`,
       // 3. Window + face
       `<g><circle cx="50" cy="50" r="13" fill="#7FC4E8" stroke="#3c5872" stroke-width="3"/>
           <circle cx="45" cy="48" r="2.8" fill="#1a1a2e"/>
@@ -157,19 +158,15 @@ const BUILD_CHARACTERS = [
           <path d="M44 56 Q50 61 56 56" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round"/></g>`,
       // 4. Nose cone
       `<g><path d="M50 4 L68 34 H32 Z" fill="#D64545" stroke="#7d2020" stroke-width="3" stroke-linejoin="round"/></g>`,
-      // 5. Flame
-      `<g><path d="M38 84 Q50 108 62 84 Q50 92 38 84 Z" fill="#F5A623" stroke="#c47a06" stroke-width="2.5" stroke-linejoin="round"/>
-          <path d="M45 86 Q50 98 55 86 Q50 90 45 86 Z" fill="#FFE08A"/></g>`,
     ],
   },
   {
     name: 'Cat',
     parts: [
-      // 1. Paws
+      // 1. Body + paws
       `<g><ellipse cx="36" cy="98" rx="11" ry="7" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/>
-          <ellipse cx="64" cy="98" rx="11" ry="7" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/></g>`,
-      // 2. Body
-      `<g><ellipse cx="50" cy="74" rx="26" ry="24" fill="#F5A623" stroke="#8a5a10" stroke-width="3"/>
+          <ellipse cx="64" cy="98" rx="11" ry="7" fill="#F7B944" stroke="#8a5a10" stroke-width="3"/>
+          <ellipse cx="50" cy="74" rx="26" ry="24" fill="#F5A623" stroke="#8a5a10" stroke-width="3"/>
           <ellipse cx="50" cy="80" rx="14" ry="15" fill="#FFF0D0"/></g>`,
       // 3. Tail
       `<g><path d="M76 84 Q94 78 88 58 Q86 50 79 52" fill="none" stroke="#8a5a10" stroke-width="9" stroke-linecap="round"/>
@@ -190,11 +187,10 @@ const BUILD_CHARACTERS = [
   {
     name: 'Dragon',
     parts: [
-      // 1. Tail
+      // 1. Body + tail
       `<g><path d="M62 88 Q90 92 88 68 Q87 60 80 60" fill="none" stroke="#2f7a2f" stroke-width="10" stroke-linecap="round"/>
-          <path d="M62 88 Q90 92 88 68 Q87 60 80 60" fill="none" stroke="#6FCF6F" stroke-width="6" stroke-linecap="round"/></g>`,
-      // 2. Body
-      `<g><ellipse cx="48" cy="76" rx="26" ry="23" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/>
+          <path d="M62 88 Q90 92 88 68 Q87 60 80 60" fill="none" stroke="#6FCF6F" stroke-width="6" stroke-linecap="round"/>
+          <ellipse cx="48" cy="76" rx="26" ry="23" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/>
           <ellipse cx="48" cy="82" rx="14" ry="14" fill="#C8F0C8"/>
           <ellipse cx="32" cy="97" rx="9" ry="6" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/>
           <ellipse cx="62" cy="97" rx="9" ry="6" fill="#6FCF6F" stroke="#2f7a2f" stroke-width="3"/></g>`,

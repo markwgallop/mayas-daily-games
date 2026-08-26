@@ -329,6 +329,7 @@
     // but is derived from the database rather than her device's localStorage.
     const DAYS_PER_LEVEL = 5;
     const ALL_GAMES = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
+    const GAMES_PER_DAY = 4;   // four of the five is the daily goal
 
     /** The level a day was played at — games store it as details.level, facts as details.band. */
     function dayLevel(rows) {
@@ -353,8 +354,8 @@
 
       let days = 0;
       Object.values(byDate).forEach(rows => {
-        const played = new Set(rows.map(r => r.game));
-        if (ALL_GAMES.some(g => !played.has(g))) return;
+        const played = new Set(rows.filter(r => ALL_GAMES.includes(r.game)).map(r => r.game));
+        if (played.size < GAMES_PER_DAY) return;
         if (dayLevel(rows) === current) days++;
       });
 
@@ -362,7 +363,7 @@
         const next = current < 5 ? `Ready for Level ${current + 1}.` : 'Level 5 is the top level.';
         el.innerHTML = `<span style="color:var(--correct);">&#11088; ${days} full days on Level ${current} &mdash; ${next}</span>`;
       } else {
-        el.textContent = `${days} of ${DAYS_PER_LEVEL} full days on Level ${current} (all ${ALL_GAMES.length} games in a day).`;
+        el.textContent = `${days} of ${DAYS_PER_LEVEL} full days on Level ${current} (any ${GAMES_PER_DAY} games in a day).`;
       }
     }
 

@@ -95,7 +95,7 @@ function renderProgressPie(el, days, level) {
   sub.className = 'progress-pie-sub';
   sub.textContent = ready
     ? 'Ask a grown-up to move you up in the parent portal.'
-    : `Finish all ${GAME_IDS.length} games in a day to fill a slice.`;
+    : `Finish any ${GAMES_PER_DAY} games in a day to fill a slice.`;
 
   el.appendChild(svg);
   el.appendChild(caption);

@@ -20,6 +20,18 @@
 
 const GAME_IDS = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
 
+/**
+ * Games needed to count the day as done. There are five games but four is the
+ * daily goal, so Maya can skip whichever one she doesn't fancy and the fifth is
+ * a bonus. The build-up character has one piece per game up to this number.
+ */
+const GAMES_PER_DAY = 4;
+
+/** How many of today's games are finished. */
+function doneToday() {
+  return GAME_IDS.filter(g => getDone(g) !== null).length;
+}
+
 function _child() {
   return window.CHILD_NAME || 'maya';
 }
@@ -70,8 +82,9 @@ function markDone(game, score, total, level) {
     localStorage.setItem(_storageKey(game), JSON.stringify({ score, total }));
     if (level) cacheLevel(level);
 
-    // Last game of the day? Record the full day at the level it was played at.
-    if (GAME_IDS.every(g => getDone(g) !== null)) {
+    // Hit the daily goal? Record the day at the level it was played at.
+    // A fifth game re-writes the same marker, which is harmless.
+    if (doneToday() >= GAMES_PER_DAY) {
       localStorage.setItem(fullDayKey(), String(level || cachedLevel()));
     }
   } catch (e) {
