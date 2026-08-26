@@ -57,10 +57,13 @@ function _pieSegment(index, total, filled) {
  * Render the days-at-level donut into `el`.
  *
  * @param {HTMLElement} el
- * @param {number} days   - full days completed at this level
- * @param {number} level  - the current level, for the caption
+ * @param {number} days      - full days completed at this level
+ * @param {number} level     - the current level, for the caption
+ * @param {boolean} [compact] - corner version: just the wheel and a tiny label.
+ *                              The full version below carries the accessible
+ *                              label, so compact copies are hidden from readers.
  */
-function renderProgressPie(el, days, level) {
+function renderProgressPie(el, days, level, compact) {
   const filled = Math.min(days, DAYS_PER_LEVEL);
   const ready = filled >= DAYS_PER_LEVEL;
 
@@ -69,7 +72,8 @@ function renderProgressPie(el, days, level) {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('class', 'progress-pie-svg');
   svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('aria-label', `${filled} of ${DAYS_PER_LEVEL} days complete`);
+  if (compact) svg.setAttribute('aria-hidden', 'true');
+  else svg.setAttribute('aria-label', `${filled} of ${DAYS_PER_LEVEL} days complete`);
   for (let i = 0; i < DAYS_PER_LEVEL; i++) {
     svg.appendChild(_pieSegment(i, DAYS_PER_LEVEL, i < filled));
   }
@@ -84,6 +88,15 @@ function renderProgressPie(el, days, level) {
   count.setAttribute('fill', ready ? 'var(--correct)' : 'var(--text-light)');
   count.textContent = String(filled);
   svg.appendChild(count);
+
+  if (compact) {
+    const mini = document.createElement('p');
+    mini.className = 'progress-pie-mini' + (ready ? ' ready' : '');
+    mini.textContent = ready ? 'Ready!' : `${filled}/${DAYS_PER_LEVEL} days`;
+    el.appendChild(svg);
+    el.appendChild(mini);
+    return;
+  }
 
   const caption = document.createElement('p');
   caption.className = 'progress-pie-caption' + (ready ? ' ready' : '');

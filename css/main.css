@@ -668,6 +668,31 @@ table.data-table tr:last-child td { border-bottom: none; }
   text-align: center;
 }
 
+/* ---------- Landing page: corner day wheels ----------
+   Absolutely positioned, so they are out of the flex flow entirely and
+   nothing below them shifts down to make room. */
+.page { position: relative; }
+
+.corner-pie {
+  position: absolute;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.corner-pie.left  { left: 10px; }
+.corner-pie.right { right: 10px; }
+.corner-pie .progress-pie-svg { width: 56px; height: 56px; }
+
+.progress-pie-mini {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+.progress-pie-mini.ready { color: var(--correct); }
+
 /* ---------- Landing page: days-at-level pie ---------- */
 .progress-pie {
   display: flex;
@@ -706,4 +731,9 @@ table.data-table tr:last-child td { border-bottom: none; }
   .numpad-btn { padding: 14px 0; font-size: 1.4rem; }
   .celebrate-character { width: 84px; height: 84px; }
   .build-svg { width: 124px; height: 124px; }
+  .corner-pie { top: 8px; }
+  .corner-pie.left  { left: 4px; }
+  .corner-pie.right { right: 4px; }
+  .corner-pie .progress-pie-svg { width: 46px; height: 46px; }
+  .progress-pie-mini { font-size: 0.56rem; }
 }

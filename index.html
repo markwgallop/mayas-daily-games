@@ -25,6 +25,9 @@
 </head>
 <body>
   <main class="page">
+    <div class="corner-pie left" id="cornerPieLeft"></div>
+    <div class="corner-pie right" id="cornerPieRight"></div>
+
     <header class="page-header">
       <h1>Maya's Daily Games</h1>
       <p class="subtitle date-label" id="dateLabel"></p>
@@ -133,15 +136,26 @@
 
     // Days-at-this-level pie. Render straight away from the cached level so the
     // page works offline, then correct it if Supabase reports a different one.
-    const pieEl = document.getElementById('progressPie');
+    // The same wheel three times: full size below the tiles, and small in both
+    // top corners so it's visible without scrolling.
+    const pieTargets = [
+      { el: document.getElementById('progressPie'),    compact: false },
+      { el: document.getElementById('cornerPieLeft'),  compact: true  },
+      { el: document.getElementById('cornerPieRight'), compact: true  },
+    ];
+    const paintPies = (level) => {
+      const days = countFullDays(level);
+      pieTargets.forEach(t => renderProgressPie(t.el, days, level, t.compact));
+    };
+
     let shownLevel = cachedLevel();
-    renderProgressPie(pieEl, countFullDays(shownLevel), shownLevel);
+    paintPies(shownLevel);
 
     fetchLevel().then(level => {
       if (level === shownLevel) return;
       cacheLevel(level);
       shownLevel = level;
-      renderProgressPie(pieEl, countFullDays(level), level);
+      paintPies(level);
     });
   </script>
 </body>

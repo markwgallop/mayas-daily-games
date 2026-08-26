@@ -176,6 +176,9 @@ on a completion screen. A fifth game rewrites the same marker, which is harmless
 has no level of its own and inherits the cached one via `cachedLevel()`.
 
 The landing page renders a five-slice donut counting the full days at the current level.
+The same wheel also appears small in both top corners so it is visible without scrolling.
+Those two copies are `position: absolute` and therefore out of the flex flow entirely —
+nothing below them shifts to make room. Keep it that way if you move them.
 At 5 it shows "Ready for the next level!" — **the level is not advanced automatically.**
 A parent still changes it in the portal, which keeps the child side INSERT-only.
 
