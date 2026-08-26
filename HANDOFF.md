@@ -175,10 +175,16 @@ It is written there, not on the landing page, so the day still counts if the tab
 on a completion screen. A fifth game rewrites the same marker, which is harmless. Card Duel
 has no level of its own and inherits the cached one via `cachedLevel()`.
 
-The landing page renders a five-slice donut counting the full days at the current level.
-The same wheel also appears small in both top corners so it is visible without scrolling.
-Those two copies are `position: absolute` and therefore out of the flex flow entirely —
-nothing below them shifts to make room. Keep it that way if you move them.
+The landing page renders a five-slice donut counting the full days at the current level,
+plus a small medallion of the same ring in the top-right corner so the count is visible
+without scrolling. The medallion is `position: absolute` and therefore out of the flex
+flow entirely — nothing below it shifts to make room. Keep it that way if you move it.
+
+**Deliberately restrained.** An earlier version put this wheel in both corners as well,
+which meant the same unclosable number stared out of the screen three times at once. The
+daily dragon is the loop Maya can actually close today, so it stays the hero of the page;
+the multi-day count gets one quiet medallion and the full wheel further down. If it ever
+starts feeling like a nag again, the medallion is the first thing to cut.
 At 5 it shows "Ready for the next level!" — **the level is not advanced automatically.**
 A parent still changes it in the portal, which keeps the child side INSERT-only.
 

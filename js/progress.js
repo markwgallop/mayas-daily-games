@@ -59,9 +59,10 @@ function _pieSegment(index, total, filled) {
  * @param {HTMLElement} el
  * @param {number} days      - full days completed at this level
  * @param {number} level     - the current level, for the caption
- * @param {boolean} [compact] - corner version: just the wheel and a tiny label.
- *                              The full version below carries the accessible
- *                              label, so compact copies are hidden from readers.
+ * @param {boolean} [compact] - medallion version: the ring and its number only.
+ *                              The ring already reads as "n of five", so it needs
+ *                              no caption nagging underneath it. The full version
+ *                              below carries the accessible label.
  */
 function renderProgressPie(el, days, level, compact) {
   const filled = Math.min(days, DAYS_PER_LEVEL);
@@ -90,11 +91,11 @@ function renderProgressPie(el, days, level, compact) {
   svg.appendChild(count);
 
   if (compact) {
-    const mini = document.createElement('p');
-    mini.className = 'progress-pie-mini' + (ready ? ' ready' : '');
-    mini.textContent = ready ? 'Ready!' : `${filled}/${DAYS_PER_LEVEL} days`;
     el.appendChild(svg);
-    el.appendChild(mini);
+    el.classList.toggle('ready', ready);
+    el.title = ready
+      ? 'Ready for the next level!'
+      : `${filled} of ${DAYS_PER_LEVEL} full days on Level ${level}`;
     return;
   }
 
