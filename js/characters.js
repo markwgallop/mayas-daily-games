@@ -336,11 +336,16 @@ function renderBuildCharacter(el, doneCount) {
 function renderDragonRow(el, dates, target) {
   el.innerHTML = '';
 
+  // If she banks more days than a level needs — she hit five but hasn't been moved
+  // up yet — show the most recent five. Taking the first five instead would freeze
+  // the row on her oldest dragons and hide every new one she earns.
+  const shown = dates.slice(-target);
+
   const row = document.createElement('div');
   row.className = 'dragon-row';
 
   for (let i = 0; i < target; i++) {
-    const iso = dates[i];
+    const iso = shown[i];
     const slot = document.createElement('div');
     slot.className = 'dragon-slot' + (iso ? ' earned' : '');
 

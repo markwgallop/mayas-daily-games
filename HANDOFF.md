@@ -204,6 +204,10 @@ At 5 the caption reads "Ready for the next level" — **the level is not advance
 automatically.** A parent still changes it in the portal, which keeps the child side
 INSERT-only.
 
+If she banks more days than a level needs — she reached five but hasn't been moved up
+yet — the row shows the **most recent** five. Taking the first five froze the row on her
+oldest dragons and hid every new one she earned.
+
 **This replaced a donut chart and a corner medallion.** Three copies of the same
 unclosable number was pressure, not progress. A collection that grows reads better than a
 gauge that is always short, and the daily dragon stays the loop she can actually close.
