@@ -1,17 +1,16 @@
 /**
  * Cartoon character art + celebration animations.
  *
- * All art is inline SVG built here rather than loaded as image files, so the
- * app keeps its zero-asset / zero-extra-request property and renders the same
- * on every device (system emoji fonts do not).
- *
  * Two roles:
- *   - CELEBRATION_CHARACTERS — one pops up on every correct answer, in games.
- *   - DRAGON_TRIBES          — one dragon is assembled from four jigsaw
- *                              pieces on the landing page, one piece per
- *                              completed game.
+ *   - CELEBRATION_CHARACTERS — inline SVG, one pops up on every correct answer
+ *                              in the games. Drawn here rather than loaded so
+ *                              the games stay asset-free.
+ *   - WOF_CHARACTERS         — the Wings of Fire artwork in assets/dragons/.
+ *                              One character per day: assembled from four
+ *                              jigsaw pieces on the landing page, then kept in
+ *                              the collection row.
  *
- * Depends on: seed.js (todayRNG, seededInt) for picking the day's build character.
+ * Depends on: seed.js (todayRNG, seededInt) for picking the day's character.
  */
 
 /* =========================================================
@@ -119,207 +118,49 @@ const CELEBRATION_CHARACTERS = [
    ========================================================= */
 
 /**
- * Tribe palettes and anatomy.
+ * The cast, and which tribe each one belongs to.
  *
- * Each tribe gets its canon colouring plus the physical features that make it
- * that tribe rather than a recolour: MudWings are broad and armoured, SeaWings
- * are webbed and gilled and glow, RainWings shift colour and coil their tails.
+ * Artwork lives in assets/dragons/, cut from the "Designs Available" sheet by
+ * scripts/extract-dragons.py — rerun that if the sheet is ever replaced.
+ *
+ * The day picks a character rather than a tribe, deliberately. Six of these are
+ * SandWings and only one is a MudWing, so picking by tribe repeats badly; picking
+ * by character gives 24 to collect and repeats are rare.
  */
-const DRAGON_TRIBES = [
-  { name: 'SkyWing',   body: '#E8562F', belly: '#F7C08A', wing: '#F08A5D', line: '#8C2A10', horn: '#F7C08A' },
-
-  // Brown, with amber and gold underscales. Large flat head, nostrils on top of
-  // the snout, thick armoured scales.
-  { name: 'MudWing',   body: '#8C6239', belly: '#D9A441', wing: '#A67C4E', line: '#4E3417', horn: '#D9B683',
-    eye: '#7A4E1C', flatHead: true, topNostrils: true, armour: true, underscale: '#E8C25A' },
-
-  // Blue-green-aquamarine. Webbed claws, gills on the neck, glow-in-the-dark
-  // stripes on tail, snout and underbelly.
-  { name: 'SeaWing',   body: '#2E9B8F', belly: '#9FE5DC', wing: '#4FBFB0', line: '#12564F', horn: '#9FE5DC',
-    eye: '#1C7A46', gills: true, webbedClaws: true, glowStripes: true, glow: '#9BFFEF' },
-
-  // Constantly shifting bright colour, like a bird-of-paradise. Prehensile tail,
-  // and eyes that pick up whatever the scales are doing.
-  { name: 'RainWing',  body: 'RAINBOW', belly: '#FFE9A8', wing: '#8AD9C0', line: '#7A3E8C', horn: '#FFE9A8',
-    eye: 'SHIFTING', prehensileTail: true, shifting: true },
-
-  { name: 'NightWing', body: '#3B3355', belly: '#6E6390', wing: '#4C4470', line: '#1A1630', horn: '#8E85B5', stars: true },
-  { name: 'IceWing',   body: '#CFE6F5', belly: '#FFFFFF', wing: '#A9D3EC', line: '#4A7EA0', horn: '#FFFFFF', spikes: true },
-  { name: 'SandWing',  body: '#E3C77E', belly: '#F7EBC4', wing: '#EAD69F', line: '#8A6B22', horn: '#F7EBC4', barb: true },
+const WOF_CHARACTERS = [
+  { file: 'Glory',       tribe: 'RainWing'  },
+  { file: 'Tsunami',     tribe: 'SeaWing'   },
+  { file: 'Clay',        tribe: 'MudWing'   },
+  { file: 'Sunny',       tribe: 'SandWing'  },
+  { file: 'Starflight',  tribe: 'NightWing' },
+  { file: 'Turtle',      tribe: 'SeaWing'   },
+  { file: 'Kinkajou',    tribe: 'RainWing'  },
+  { file: 'Winter',      tribe: 'IceWing'   },
+  { file: 'Peril',       tribe: 'SkyWing'   },
+  { file: 'Qibli',       tribe: 'SandWing'  },
+  { file: 'Moonwatcher', tribe: 'NightWing' },
+  { file: 'Jambu',       tribe: 'RainWing'  },
+  { file: 'Tamarin',     tribe: 'RainWing'  },
+  { file: 'Blister',     tribe: 'SandWing'  },
+  { file: 'Blaze',       tribe: 'SandWing'  },
+  { file: 'Burn',        tribe: 'SandWing'  },
+  { file: 'Darkstalker', tribe: 'NightWing' },
+  { file: 'Gill',        tribe: 'SeaWing'   },
+  { file: 'Coral',       tribe: 'SeaWing'   },
+  { file: 'Thorn',       tribe: 'SandWing'  },
+  { file: 'Hawthorn',    tribe: 'LeafWing'  },
+  { file: 'Sundew',      tribe: 'LeafWing'  },
+  { file: 'Cricket',     tribe: 'HiveWing'  },
+  { file: 'Blue',        tribe: 'SilkWing'  },
+  // WinterAlt.webp is a second drawing of Winter. Left out of the pool so the
+  // same dragon can't appear twice in one collection; the file is still there.
 ];
 
-/** Which tribe's dragon belongs to a given day. Same rule as the puzzles. */
-function tribeForDate(date) {
-  return DRAGON_TRIBES[seededInt(0, DRAGON_TRIBES.length - 1, todayRNG(7331, date))];
-}
+const DRAGON_DIR = 'assets/dragons';
 
-/**
- * The full dragon, drawn once on a 0 0 120 120 canvas.
- * `uid` keeps the gradient ids unique when several dragons share a page.
- */
-function _dragonArt(t, uid) {
-  const L = t.line;
-  const body = t.body === 'RAINBOW' ? `url(#wof-rain-${uid})` : t.body;
-  const eye  = t.eye === 'SHIFTING' ? `url(#wof-eye-${uid})` : (t.eye || '#1a1a2e');
-
-  // Wings sweep up and out from the shoulders to the top corners, with a
-  // scalloped trailing edge and finger bones — the thing that makes a
-  // silhouette read as "dragon" rather than "bat-eared animal".
-  const wing = (flip) => {
-    const g = flip ? 'transform="translate(120,0) scale(-1,1)"' : '';
-    return `<g ${g}>
-      <path d="M50 76 C 38 60, 20 34, 3 20
-               C 7 35, 10 45, 13 53
-               Q 23 53, 28 60
-               Q 35 62, 39 67
-               Q 45 72, 50 76 Z"
-            fill="${t.wing}" stroke="${L}" stroke-width="2.4" stroke-linejoin="round"/>
-      <path d="M50 76 L 3 20 M50 76 L 13 53 M50 76 L 28 60 M50 76 L 39 67"
-            fill="none" stroke="${L}" stroke-width="1.5" opacity="0.55"/>
-    </g>`;
-  };
-
-  // RainWings have prehensile tails, so theirs curls into a grip.
-  const tail = t.prehensileTail
-    ? 'M78 98 C 99 100, 114 105, 111 113 C 108 120, 97 118, 99 111'
-    : 'M78 98 C 98 102, 109 109, 111 117';
-
-  // MudWing heads are large and flat; everyone else's is rounder and higher.
-  const flat = !!t.flatHead;
-  const headCy   = flat ? 34   : 36;
-  const headRx   = flat ? 19.5 : 16;
-  const headRy   = flat ? 11   : 14;
-  const eyeY     = flat ? 32   : 34;
-  const eyeX     = flat ? 8    : 6;   // offset from centre
-  const muzzleCy = flat ? 45   : 47;
-  const muzzleRx = flat ? 13   : 10;
-  const muzzleRy = flat ? 6.5  : 7.5;
-
-  // MudWing nostrils sit on top of the snout rather than facing forward.
-  const nostrils = t.topNostrils
-    ? `<ellipse cx="56" cy="${muzzleCy - 4}" rx="1.9" ry="1.2" fill="${L}"/>
-       <ellipse cx="64" cy="${muzzleCy - 4}" rx="1.9" ry="1.2" fill="${L}"/>`
-    : `<circle cx="57" cy="${muzzleCy - 2}" r="1.4" fill="${L}"/>
-       <circle cx="63" cy="${muzzleCy - 2}" r="1.4" fill="${L}"/>`;
-
-  // Belly detail: armour plates, glow stripes, or plain scale lines.
-  const bellyDetail = t.armour
-    ? `<path d="M41 78 Q60 71 79 78 M41 88 Q60 81 79 88 M45 97 Q60 91 75 97"
-             fill="none" stroke="${L}" stroke-width="2.1" opacity="0.5" stroke-linecap="round"/>
-       <path d="M52 84 h16 M52 92 h16" stroke="${t.underscale}" stroke-width="2.6" stroke-linecap="round"/>`
-    : t.glowStripes
-    ? `<path d="M51 83 h18 M51 90 h18 M54 96 h12"
-             stroke="${t.glow}" stroke-width="2.6" stroke-linecap="round"/>`
-    : `<path d="M50 82 h20 M50 90 h20 M52 97 h16" stroke="${L}" stroke-width="1.2" opacity="0.3"/>`;
-
-  // SeaWing gills, down both sides of the neck.
-  // Only a narrow strip of neck shows between the muzzle and the body, so the
-  // gills live there and are drawn last, on top of everything.
-  const gills = t.gills ? `
-    <path d="M50 52 q4.5 2.5 0 5 M50 59 q4.5 2.5 0 5 M50 66 q4.5 2.5 0 5"
-          fill="none" stroke="${L}" stroke-width="1.8" stroke-linecap="round"/>
-    <path d="M70 52 q-4.5 2.5 0 5 M70 59 q-4.5 2.5 0 5 M70 66 q-4.5 2.5 0 5"
-          fill="none" stroke="${L}" stroke-width="1.8" stroke-linecap="round"/>` : '';
-
-  // SeaWing webbing between the claws.
-  const webs = t.webbedClaws ? `
-    <path d="M31 108 Q34 118 40 116 Q46 118 49 108 Q40 113 31 108 Z"
-          fill="${t.glow}" opacity="0.9" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M71 108 Q74 118 80 116 Q86 118 89 108 Q80 113 71 108 Z"
-          fill="${t.glow}" opacity="0.9" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>` : '';
-
-  // Claw ticks, unless the webbing already covers the feet.
-  const claws = t.webbedClaws ? '' : `
-    <path d="M33 110 h4 M40 111 h4 M47 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M73 110 h4 M80 111 h4 M87 110 h4" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>`;
-
-  // SeaWing glow stripes run the length of the tail and across the snout too.
-  const tailGlow = t.glowStripes
-    ? `<path d="${tail}" fill="none" stroke="${t.glow}" stroke-width="3" stroke-dasharray="3 6" stroke-linecap="round"/>`
-    : '';
-  const snoutGlow = t.glowStripes
-    ? `<path d="M54 ${muzzleCy + 1} h12" stroke="${t.glow}" stroke-width="2.4" stroke-linecap="round"/>`
-    : '';
-
-  // RainWing scales shifting colour, over the gradient.
-  const shifting = t.shifting ? `
-    <circle cx="47" cy="80" r="4.5" fill="#FF8FCF" opacity="0.7"/>
-    <circle cx="72" cy="86" r="4" fill="#7FE0FF" opacity="0.7"/>
-    <circle cx="58" cy="98" r="3.4" fill="#FFE066" opacity="0.7"/>
-    <circle cx="66" cy="74" r="3" fill="#B9FF7F" opacity="0.7"/>` : '';
-
-  const stars = t.stars ? `
-    <circle cx="20" cy="34" r="1.8" fill="#E8E2FF"/><circle cx="30" cy="50" r="1.4" fill="#E8E2FF"/>
-    <circle cx="12" cy="26" r="1.3" fill="#E8E2FF"/><circle cx="100" cy="34" r="1.8" fill="#E8E2FF"/>
-    <circle cx="90" cy="50" r="1.4" fill="#E8E2FF"/><circle cx="108" cy="26" r="1.3" fill="#E8E2FF"/>` : '';
-
-  const spikes = t.spikes ? `
-    <path d="M60 20 L57 27 L63 27 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M88 100 L94 96 L92 103 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M100 110 L107 108 L103 114 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.5" stroke-linejoin="round"/>` : '';
-
-  const barb = t.barb ? `
-    <path d="M108 114 L119 108 L112 120 Z" fill="${t.horn}" stroke="${L}" stroke-width="1.8" stroke-linejoin="round"/>` : '';
-
-  return `
-    ${wing(false)}${wing(true)}
-    ${stars}
-    <!-- tail -->
-    <path d="${tail}" fill="none" stroke="${L}" stroke-width="9.5" stroke-linecap="round"/>
-    <path d="${tail}" fill="none" stroke="${body}" stroke-width="6" stroke-linecap="round"/>
-    ${tailGlow}${barb}
-    <!-- hind legs -->
-    <ellipse cx="40" cy="105" rx="11" ry="8.5" fill="${body}" stroke="${L}" stroke-width="2.4"/>
-    <ellipse cx="80" cy="105" rx="11" ry="8.5" fill="${body}" stroke="${L}" stroke-width="2.4"/>
-    ${webs}${claws}
-    <!-- neck, drawn behind the body and head -->
-    <path d="M53 44 L67 44 L72 76 L48 76 Z" fill="${body}" stroke="${L}" stroke-width="2.4" stroke-linejoin="round"/>
-    <!-- body -->
-    <ellipse cx="60" cy="84" rx="23" ry="22" fill="${body}" stroke="${L}" stroke-width="${t.armour ? 3.4 : 2.6}"/>
-    <ellipse cx="60" cy="89" rx="12.5" ry="14" fill="${t.belly}"/>
-    ${bellyDetail}
-    ${shifting}
-    <!-- horns, swept back -->
-    <path d="M50 30 C 43 21, 37 11, 35 3 C 44 10, 52 20, 56 27 Z"
-          fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
-    <path d="M70 30 C 77 21, 83 11, 85 3 C 76 10, 68 20, 64 27 Z"
-          fill="${t.horn}" stroke="${L}" stroke-width="2.1" stroke-linejoin="round"/>
-    <!-- head -->
-    <ellipse cx="60" cy="${headCy}" rx="${headRx}" ry="${headRy}" fill="${body}" stroke="${L}" stroke-width="${t.armour ? 3.2 : 2.6}"/>
-    <ellipse cx="60" cy="${muzzleCy}" rx="${muzzleRx}" ry="${muzzleRy}" fill="${t.belly}" stroke="${L}" stroke-width="2.2"/>
-    ${snoutGlow}
-    <circle cx="${60 - eyeX}" cy="${eyeY}" r="3.4" fill="${eye}"/>
-    <circle cx="${60 + eyeX}" cy="${eyeY}" r="3.4" fill="${eye}"/>
-    <circle cx="${60 - eyeX}" cy="${eyeY}" r="1.5" fill="#1a1a2e"/>
-    <circle cx="${60 + eyeX}" cy="${eyeY}" r="1.5" fill="#1a1a2e"/>
-    <circle cx="${61 - eyeX}" cy="${eyeY - 1.2}" r="1.1" fill="#fff"/>
-    <circle cx="${61 + eyeX}" cy="${eyeY - 1.2}" r="1.1" fill="#fff"/>
-    ${nostrils}
-    <path d="M${60 - muzzleRx * 0.5} ${muzzleCy + muzzleRy * 0.5} Q60 ${muzzleCy + muzzleRy * 1.1} ${60 + muzzleRx * 0.5} ${muzzleCy + muzzleRy * 0.5}"
-          fill="none" stroke="${L}" stroke-width="2" stroke-linecap="round"/>
-    ${gills}
-    ${spikes}`;
-}
-
-/**
- * RainWing gradients, scoped to one dragon instance.
- *
- * Bright and bird-of-paradise rather than pastel, and the eyes get their own
- * gradient so they pick up whatever the scales are doing.
- */
-function _dragonGradients(uid) {
-  return `<linearGradient id="wof-rain-${uid}" x1="0" y1="0" x2="1" y2="1">` +
-      `<stop offset="0%" stop-color="#FF5FA2"/>` +
-      `<stop offset="28%" stop-color="#FF9E3D"/>` +
-      `<stop offset="52%" stop-color="#FFE04A"/>` +
-      `<stop offset="76%" stop-color="#4FD98A"/>` +
-      `<stop offset="100%" stop-color="#3FC6E0"/>` +
-    `</linearGradient>` +
-    `<linearGradient id="wof-eye-${uid}" x1="0" y1="0" x2="1" y2="1">` +
-      `<stop offset="0%" stop-color="#5FD36B"/>` +
-      `<stop offset="50%" stop-color="#E8C63D"/>` +
-      `<stop offset="100%" stop-color="#4FA8D8"/>` +
-    `</linearGradient>`;
+/** Which character belongs to a given day. Same seeded rule as the puzzles. */
+function characterForDate(date) {
+  return WOF_CHARACTERS[seededInt(0, WOF_CHARACTERS.length - 1, todayRNG(7331, date))];
 }
 
 /* ---- Jigsaw geometry ----------------------------------------------------
@@ -437,14 +278,13 @@ function celebrate() {
 
 /**
  * Render today's dragon with `doneCount` of its four jigsaw pieces earned.
- * Earned pieces fly in from their edge and lock into place; the rest sit as
- * faint ghosts so the shape of what's coming is visible.
+ * Earned pieces fly in from their edge and lock into place; the rest stay empty.
  *
- * The tribe is chosen with the daily seed, so every device shows the same
+ * The character is chosen with the daily seed, so every device shows the same
  * dragon on the same day — the same rule the puzzles follow.
  */
 function renderBuildCharacter(el, doneCount) {
-  const tribe = tribeForDate(new Date());
+  const ch = characterForDate(new Date());
   const total = JIGSAW_PIECES.length;
   const earned = Math.max(0, Math.min(doneCount, total));
 
@@ -453,26 +293,31 @@ function renderBuildCharacter(el, doneCount) {
     .join('');
 
   const pieces = JIGSAW_PIECES.map((p, i) => {
-    const on = i < earned;
+    if (i >= earned) return '';
     const style = `transform-box:view-box;transform-origin:${p.origin};` +
-      (on ? `--fly-x:${p.fly.x}px;--fly-y:${p.fly.y}px;--fly-rot:${p.fly.rot}deg;` +
-            `animation-delay:${i * 130}ms;` : '');
-    return `<g class="build-part${on ? '' : ' ghost'}" clip-path="url(#wof-piece-${i})" ` +
-           `style="${style}"><use href="#wof-art"/></g>`;
+      `--fly-x:${p.fly.x}px;--fly-y:${p.fly.y}px;--fly-rot:${p.fly.rot}deg;` +
+      `animation-delay:${i * 130}ms;`;
+    return `<g class="build-part" clip-path="url(#wof-piece-${i})" style="${style}">` +
+             `<use href="#wof-art"/></g>`;
   }).join('');
 
+  // Faint outlines of the pieces still to come, so the shape of the puzzle reads.
+  const pending = JIGSAW_PIECES.map((p, i) =>
+    i < earned ? '' : `<path class="build-pending" d="${p.d}"/>`).join('');
+
   const caption = earned >= total
-    ? `${tribe.name} complete! All ${total} games done &#127881;`
+    ? `${ch.file} the ${ch.tribe} &mdash; complete! &#127881;`
     : `${earned} of ${total} pieces &mdash; play a game to add another!`;
 
   el.innerHTML =
-    `<svg class="build-svg" viewBox="0 0 120 120" aria-label="${tribe.name} dragon">` +
+    `<svg class="build-svg" viewBox="0 0 120 120" aria-label="${ch.file} the ${ch.tribe}">` +
       `<defs>` +
-        _dragonGradients('main') +
-        `<g id="wof-art">${_dragonArt(tribe, 'main')}</g>` +
+        // slice, not meet — letterboxing the art leaves whole jigsaw pieces empty.
+        `<image id="wof-art" href="${DRAGON_DIR}/${ch.file}.webp" ` +
+               `x="0" y="0" width="120" height="120" preserveAspectRatio="xMidYMid slice"/>` +
         clips +
       `</defs>` +
-      pieces +
+      pending + pieces +
     `</svg>` +
     `<p class="build-caption">${caption}</p>`;
 }
@@ -481,7 +326,7 @@ function renderBuildCharacter(el, doneCount) {
  * The collection row: one dragon per day she finished the daily goal, in the
  * order she earned them, with empty slots for the days still to come.
  *
- * Each dragon is the one she actually built that day — the tribe comes from
+ * Each dragon is the one she actually built that day — the character comes from
  * that date's seed — so the row is a record of her week rather than a gauge.
  *
  * @param {HTMLElement} el
@@ -499,19 +344,12 @@ function renderDragonRow(el, dates, target) {
     const slot = document.createElement('div');
     slot.className = 'dragon-slot' + (iso ? ' earned' : '');
 
-    // Empty slots show a faint dragon so the shape of what's coming is visible.
-    const tribe = iso ? tribeForDate(new Date(iso + 'T00:00:00')) : DRAGON_TRIBES[0];
-    const uid = `row${i}`;
-    // Cropped to head, horns and wings — a portrait. The full body is far too
-    // much detail to read at slot size.
-    slot.innerHTML =
-      `<svg viewBox="6 0 108 76" aria-hidden="true">` +
-        `<defs>${_dragonGradients(uid)}</defs>${_dragonArt(tribe, uid)}` +
-      `</svg>`;
-
     if (iso) {
+      const ch = characterForDate(new Date(iso + 'T00:00:00'));
       const day = new Date(iso + 'T00:00:00');
-      slot.title = `${tribe.name} — ${day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+      slot.innerHTML = `<img src="${DRAGON_DIR}/${ch.file}.webp" alt="${ch.file} the ${ch.tribe}">`;
+      slot.title = `${ch.file} the ${ch.tribe} — ` +
+        day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
     row.appendChild(slot);
   }

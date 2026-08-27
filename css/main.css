@@ -655,10 +655,13 @@ table.data-table tr:last-child td { border-bottom: none; }
 .build-part {
   animation: piece-fly-in 720ms cubic-bezier(0.34, 1.3, 0.64, 1) backwards;
 }
-.build-part.ghost {
-  opacity: 0.12;
-  animation: none;
-  filter: grayscale(1);
+
+/* Outlines of the pieces still to come, so the puzzle's shape reads. */
+.build-pending {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
 }
 
 .build-caption {
@@ -686,8 +689,8 @@ table.data-table tr:last-child td { border-bottom: none; }
 }
 
 .dragon-slot {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: #fff;
   border: 2px dashed var(--border);
@@ -696,10 +699,13 @@ table.data-table tr:last-child td { border-bottom: none; }
   justify-content: center;
   overflow: hidden;
 }
-.dragon-slot svg { width: 116%; height: 116%; display: block; }
-
-/* Empty slots keep a faint dragon so the shape of what's coming is visible. */
-.dragon-slot:not(.earned) svg { opacity: 0.1; filter: grayscale(1); }
+/* contain, not cover — these are whole dragons and cropping decapitates them. */
+.dragon-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 2px;
+}
 
 .dragon-slot.earned {
   border-style: solid;
@@ -723,5 +729,5 @@ table.data-table tr:last-child td { border-bottom: none; }
   .numpad-btn { padding: 14px 0; font-size: 1.4rem; }
   .celebrate-character { width: 84px; height: 84px; }
   .build-svg { width: 124px; height: 124px; }
-  .dragon-slot { width: 40px; height: 40px; }
+  .dragon-slot { width: 46px; height: 46px; }
 }
