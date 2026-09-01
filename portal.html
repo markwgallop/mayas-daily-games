@@ -198,7 +198,7 @@
 
     const GAME_LABELS = {
       facts:      'Daily Facts',
-      make_ten:   'Make a Ten',
+      make_ten:   'Make the Total',
       shut_box:   'Shut the Box',
       dice_flash: 'Dice Flash',
     };
@@ -328,8 +328,8 @@
     // every game. This mirrors the pie chart she sees on the landing page,
     // but is derived from the database rather than her device's localStorage.
     const DAYS_PER_LEVEL = 5;
-    const ALL_GAMES = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
-    const GAMES_PER_DAY = 4;   // four of the five is the daily goal
+    const ALL_GAMES = ['facts', 'make_ten', 'shut_box', 'dice_flash'];
+    const GAMES_PER_DAY = 4;   // all four games
 
     /** The level a day was played at — games store it as details.level, facts as details.band. */
     function dayLevel(rows) {
@@ -363,7 +363,7 @@
         const next = current < 5 ? `Ready for Level ${current + 1}.` : 'Level 5 is the top level.';
         el.innerHTML = `<span style="color:var(--correct);">&#11088; ${days} full days on Level ${current} &mdash; ${next}</span>`;
       } else {
-        el.textContent = `${days} of ${DAYS_PER_LEVEL} full days on Level ${current} (any ${GAMES_PER_DAY} games in a day).`;
+        el.textContent = `${days} of ${DAYS_PER_LEVEL} full days on Level ${current} (all ${GAMES_PER_DAY} games in a day).`;
       }
     }
 
@@ -496,7 +496,7 @@
             <tr>
               <th>Date</th>
               <th>Facts</th>
-              <th>Make a Ten</th>
+              <th>Make the Total</th>
               <th>Shut the Box</th>
               <th>Dice Flash</th>
             </tr>

@@ -18,12 +18,12 @@
  * at the current level — moving up a level starts the count again.
  */
 
-const GAME_IDS = ['facts', 'make_ten', 'shut_box', 'dice_flash', 'war'];
+const GAME_IDS = ['facts', 'make_ten', 'shut_box', 'dice_flash'];
 
 /**
- * Games needed to count the day as done. There are five games but four is the
- * daily goal, so Maya can skip whichever one she doesn't fancy and the fifth is
- * a bonus. The build-up character has one piece per game up to this number.
+ * Games needed to count the day as done — all four of them. The build-up
+ * character has one jigsaw piece per game, so it completes exactly as the day
+ * does.
  */
 const GAMES_PER_DAY = 4;
 

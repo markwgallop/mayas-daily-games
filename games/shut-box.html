@@ -409,8 +409,15 @@
       const newBest = prevBest === null || remaining < prevBest;
       saveBest(remaining);
 
-      document.querySelector('.card:not(.completion)').classList.add('hidden');
-      tilesRow.classList.add('hidden');
+      // The board stays on screen: she can see the roll she couldn't use and the
+      // tiles that are still open. Only the controls go away — the result card
+      // appears below it all.
+      rollBtn.classList.add('hidden');
+      oneDieBtn.classList.add('hidden');
+      closeBtn.classList.add('hidden');
+      selectionInfo.innerHTML = shutCompletely
+        ? 'Every tile closed!'
+        : `No tiles add up to <span>${currentRoll}</span> — nothing left to flip.`;
       completionCard.classList.add('visible');
 
       const starEl  = document.getElementById('completionStar');
@@ -440,6 +447,8 @@
         total: maxScore,
         details: { level, rolls: rollHistory, remaining, open_tiles: openTilesList() }
       });
+
+      completionCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // ── Init (async — level comes from Supabase) ────────────────────────────

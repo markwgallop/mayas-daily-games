@@ -6,7 +6,7 @@ A complete static web app at `/home/markgallop/HomePi/claude-ws/maya-games/`:
 
 ```
 maya-games/
-├── index.html              # Landing page — 5 game tiles, build-up character, days pie
+├── index.html              # Landing page — 4 game tiles, build-up character, dragon collection
 ├── portal.html             # Parent portal — auth login + results views + level selector
 ├── css/main.css            # Shared styles (Nunito font, touch-first)
 ├── js/
@@ -14,14 +14,13 @@ maya-games/
 │   ├── seed.js             # Mulberry32 PRNG, date→seed, seededShuffle/Pick/Int
 │   ├── db.js               # Supabase client + saveResult() — INSERT only, fetchLevel()
 │   ├── completion.js       # localStorage "played today" tracker + full-day markers
-│   ├── characters.js       # Inline-SVG cartoon art: celebrate() + renderBuildCharacter()
-│   └── progress.js         # countFullDays() + renderProgressPie() — landing page only
+│   ├── characters.js       # celebrate() + renderBuildCharacter() + dragon row and sets
+│   └── progress.js         # allFullDays() + levelSets() — landing page only
 ├── games/
 │   ├── facts.html          # 10 seeded addition/subtraction facts, numpad input
-│   ├── make-ten.html       # 8 seeded Make-a-Ten problems, 4-choice tap
+│   ├── make-ten.html       # 8 seeded Make the Total problems, 4-choice tap
 │   ├── shut-box.html       # Full Shut the Box — SVG dice, seeded rolls, subset-sum checker
-│   ├── dice-flash.html     # 8 dot-pattern flashes, tap-to-reveal, 4 choices
-│   └── war.html            # Card Duel — add two cards, first to 7 round wins
+│   └── dice-flash.html     # 8 dot-pattern flashes, tap-to-reveal, 4 choices
 ├── netlify.toml            # sed build command injects env vars into config.js
 ├── README.md               # Full setup instructions + acceptance test
 └── HANDOFF.md              # This file
@@ -123,7 +122,7 @@ Repo is live at: **https://github.com/markwgallop/mayas-daily-games**
 
 - **No timers or countdowns** anywhere in any game
 - **No streaks, leaderboards, or score comparisons**
-- **Bounded daily set** — fixed small number of problems per game (10 facts, 8 Make-a-Ten, 1 Shut the Box run, 8 Dice Flash, first-to-7 Card Duel), seeded by date
+- **Bounded daily set** — fixed small number of problems per game (10 facts, 8 Make the Total, 1 Shut the Box run, 8 Dice Flash), seeded by date
 - **Same puzzle on every device on the same day** — `dateSeed()` in `js/seed.js` guarantees this
 - **Child side is INSERT-only** — `db.js` never calls `.select()`; RLS enforces this at the DB level too
 - **Portal deduplicates** on `(game, play_date)` latest-wins — two submissions from two devices produce two rows; the portal filters them client-side in `portal.html`
@@ -138,7 +137,7 @@ All art is inline SVG built in JS. No image files, no extra requests, and it ren
 identically everywhere (system emoji fonts do not). Two roles:
 
 - `celebrate()` — pops a random happy character at one of six screen positions on every
-  correct answer, then removes itself. Called from all five games. **The animation must
+  correct answer, then removes itself. Called from all four games. **The animation must
   finish inside 800ms** — `facts.html` advances to the next question 900ms after a correct
   answer, and the pop must be gone by then.
 - `renderBuildCharacter(el, doneCount)` — the landing page dragon, assembled one jigsaw
@@ -184,29 +183,29 @@ tiles is closed — the equivalent "you got it" event.
 
 ### Days-at-level progress — `js/progress.js` and the `maya_fullday_` keys
 
-**The daily goal is any 4 of the 5 games** (`GAMES_PER_DAY` in `completion.js`). Maya can
-skip whichever one she doesn't fancy; a fifth is a bonus that earns a different banner but
-does not double-count.
+**The daily goal is all four games** (`GAMES_PER_DAY` in `completion.js`), which is also
+the number of jigsaw pieces in the daily dragon — so the dragon finishes exactly as the
+day does.
 
 `markDone()` writes `maya_fullday_YYYY-MM-DD → <level>` once the goal is met for the day.
 It is written there, not on the landing page, so the day still counts if the tab is closed
-on a completion screen. A fifth game rewrites the same marker, which is harmless. Card Duel
-has no level of its own and inherits the cached one via `cachedLevel()`.
+on a completion screen.
 
 The landing page shows a row of dragons along the top — one per day she hit the goal, in
 the order she earned them, with faint empty slots for the days still to come. Each dragon
-is the one she actually built that day: `tribeForDate()` re-derives the tribe from that
-date's seed, which is why `fullDayDates()` returns the dates rather than just a count.
-Slots are cropped to a head-and-wings portrait (`viewBox="6 0 108 76"`) because a whole
-dragon is unreadable at 48px.
+is the one she actually built that day: `characterForDate()` re-derives it from that
+date's seed, which is why `allFullDays()` returns the dates rather than just a count.
 
-At 5 the caption reads "Ready for the next level" — **the level is not advanced
-automatically.** A parent still changes it in the portal, which keeps the child side
-INSERT-only.
+**When the fifth dragon lands the set closes.** `levelSets()` splits a level's days into
+finished fives plus whatever is banked towards the next set; the finished fives are drawn
+at the foot of the page by `renderDragonSets()` — five dragons ringed around the level
+number they were earned at — and the row up top starts again from empty. Days beyond the
+fifth therefore begin a fresh set instead of pushing her earlier dragons out of the row,
+which is what the old "show the most recent five" rule did.
 
-If she banks more days than a level needs — she reached five but hasn't been moved up
-yet — the row shows the **most recent** five. Taking the first five froze the row on her
-oldest dragons and hid every new one she earned.
+**The level is not advanced automatically.** A parent still changes it in the portal,
+which keeps the child side INSERT-only — so the "ready for the next level" line sits under
+the finished set rather than in the row, which by then has reset to zero.
 
 **This replaced a donut chart and a corner medallion.** Three copies of the same
 unclosable number was pressure, not progress. A collection that grows reads better than a

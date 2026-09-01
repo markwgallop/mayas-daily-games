@@ -19,7 +19,6 @@
   --ten-hue:     #F5A623;   /* amber */
   --box-hue:     #5CB85C;   /* green */
   --flash-hue:   #9B59B6;   /* purple */
-  --war-hue:     #D64545;   /* red */
 
   /* UI */
   --radius:      16px;
@@ -145,7 +144,6 @@ a { text-decoration: none; color: inherit; }
 .tile.make-ten  { --tile-color: var(--ten-hue); }
 .tile.shut-box  { --tile-color: var(--box-hue); }
 .tile.dice-flash { --tile-color: var(--flash-hue); }
-.tile.war    { --tile-color: var(--war-hue); }
 
 /* ---------- Game container ---------- */
 .game-page {
@@ -720,6 +718,89 @@ table.data-table tr:last-child td { border-bottom: none; }
   text-align: center;
 }
 .dragon-row-caption.ready { color: var(--correct); }
+
+/* ---------- Landing page: finished dragon sets ----------
+   A completed five, ringed around the level they were earned at, parked at the
+   foot of the page. The row up top resets to empty when a set closes, so this
+   is where the finished ones live. */
+.dragon-sets-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dragon-sets-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.dragon-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* 152px = 2 x (ring radius 52 + half a 48px slot). */
+.dragon-set {
+  position: relative;
+  width: 152px;
+  height: 152px;
+  flex-shrink: 0;
+}
+
+.dragon-set-slot {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--success);
+  box-shadow: 0 2px 8px var(--shadow);
+  overflow: hidden;
+}
+.dragon-set-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 2px;
+}
+
+.dragon-set-level {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--success);
+  box-shadow: 0 2px 8px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.dragon-set-level .lbl {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+.dragon-set-level .num {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--correct);
+}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 400px) {

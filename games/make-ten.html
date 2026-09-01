@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Make a Ten — Maya's Games</title>
+  <title>Make the Total — Maya's Games</title>
   <link rel="stylesheet" href="../css/main.css">
   <style>
     :root { --accent: var(--ten-hue); }
@@ -46,7 +46,7 @@
 
     <div class="game-header">
       <button class="back-btn" onclick="history.back()">&#8592;</button>
-      <span class="game-title">Make a Ten</span>
+      <span class="game-title">Make the Total</span>
       <span style="font-size:0.85rem; color:var(--text-light); font-weight:600;" id="counter">1 / 8</span>
     </div>
 
@@ -56,7 +56,7 @@
 
     <!-- Question -->
     <div class="card" id="questionCard">
-      <div class="ten-prompt" id="tenPrompt">What makes 10?</div>
+      <div class="ten-prompt" id="tenPrompt">Make the total</div>
       <div class="ten-number" id="mainNumber"></div>
       <div class="ten-equation" id="equation"></div>
       <div class="feedback" id="feedback"></div>
@@ -85,7 +85,7 @@
   <script src="../js/characters.js"></script>
   <script>
     // ── Level config ───────────────────────────────────────────────────────
-    // Make-a-Ten trains number bonds / complements. The global level scales the
+    // Make the Total trains number bonds / complements. The global level scales the
     // "whole" (10 → 20 → 100) and, at L4, varies the blank position so the child
     // also reasons about the inverse (? + a = whole).
     const TOTAL = 8;

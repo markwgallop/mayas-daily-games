@@ -7,7 +7,7 @@ A self-hosted, date-seeded daily games page for a 7-year-old. Four math games; o
 | Game | Description |
 |------|-------------|
 | Daily Facts | 10 seeded addition/subtraction facts — bonds of 10, doubles, near-doubles |
-| Make a Ten | Show a number; tap the partner that makes 10 |
+| Make the Total | Show a number; tap the partner that makes the total (10, 20, or 100 by level) |
 | Shut the Box | Roll two dice; tap tiles that sum to the roll |
 | Dice Flash | Flash a dot pattern briefly; tap the count |
 

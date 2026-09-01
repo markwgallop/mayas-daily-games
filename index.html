@@ -49,8 +49,8 @@
 
       <a href="games/make-ten.html" class="tile make-ten" id="tile-make_ten">
         <div class="tile-icon">&#128081;</div>
-        <div class="tile-name">Make a Ten</div>
-        <div class="tile-desc">Find the partner that makes 10</div>
+        <div class="tile-name">Make the Total</div>
+        <div class="tile-desc">Find the partner that makes the total</div>
         <div class="tile-score" id="score-make_ten"></div>
       </a>
 
@@ -68,14 +68,9 @@
         <div class="tile-score" id="score-dice_flash"></div>
       </a>
 
-      <a href="games/war.html" class="tile war" id="tile-war">
-        <div class="tile-icon">&#9829;</div>
-        <div class="tile-name">Card Duel</div>
-        <div class="tile-desc">Add your cards — beat the computer!</div>
-        <div class="tile-score" id="score-war"></div>
-      </a>
-
     </div>
+
+    <div class="dragon-sets-wrap" id="dragonSets"></div>
 
     <a href="portal.html" style="color: var(--text-light); font-size:0.82rem; margin-top:8px;">
       Parent portal &#8250;
@@ -98,13 +93,12 @@
 
     // Restore completion state from localStorage
     const done = getAllDone();
-    const gameNames = { facts: 'facts', make_ten: 'make_ten', shut_box: 'shut_box', dice_flash: 'dice_flash', war: 'war' };
+    const gameNames = { facts: 'facts', make_ten: 'make_ten', shut_box: 'shut_box', dice_flash: 'dice_flash' };
     const scoreLabels = {
       facts:      (s, t) => `${s}/${t} correct`,
       make_ten:   (s, t) => `${s}/${t} correct`,
       shut_box:   (s, t) => `Score: ${s}`,   // s = remaining tiles (lower=better)
       dice_flash: (s, t) => `${s}/${t} correct`,
-      war:        (s, t) => `${s} rounds won`,
     };
 
     let doneCount = 0;
@@ -121,22 +115,25 @@
     // Today's character gains a piece for each game finished, up to the goal.
     renderBuildCharacter(document.getElementById('buildCharacter'), doneCount);
 
-    // Four games is the goal; a fifth is a bonus.
+    // All four games is the goal.
     if (doneCount >= GAMES_PER_DAY) {
-      const banner = document.getElementById('allDoneBanner');
-      banner.innerHTML = doneCount > GAMES_PER_DAY
-        ? 'Every single game done today! Superstar! &#127775;'
-        : 'All done for today! Great work! &#127775;';
-      banner.classList.add('visible');
+      document.getElementById('allDoneBanner').classList.add('visible');
       celebrate();
     }
 
     // Days-at-this-level pie. Render straight away from the cached level so the
     // page works offline, then correct it if Supabase reports a different one.
-    // The dragons she has collected at this level, along the top.
+    // The dragons she is still collecting go along the top; each finished set of
+    // five drops to the bottom of the page, ringed around its level number.
     const collectionEl = document.getElementById('dragonCollection');
-    const paintCollection = (level) =>
-      renderDragonRow(collectionEl, fullDayDates(level), DAYS_PER_LEVEL);
+    const setsEl = document.getElementById('dragonSets');
+    const paintCollection = (level) => {
+      const byLevel = allFullDays();
+      const sets = Object.keys(byLevel).map(Number).sort((a, b) => a - b)
+        .flatMap(lvl => levelSets(byLevel[lvl]).complete.map(dates => ({ level: lvl, dates })));
+      renderDragonSets(setsEl, sets, level);
+      renderDragonRow(collectionEl, levelSets(byLevel[level] || []).inProgress, DAYS_PER_LEVEL);
+    };
 
     let shownLevel = cachedLevel();
     paintCollection(shownLevel);

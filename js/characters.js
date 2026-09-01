@@ -329,23 +329,21 @@ function renderBuildCharacter(el, doneCount) {
  * Each dragon is the one she actually built that day — the character comes from
  * that date's seed — so the row is a record of her week rather than a gauge.
  *
+ * Only the set she is currently filling belongs here; once five are collected
+ * levelSets() hands them to renderDragonSets() and this row starts again empty.
+ *
  * @param {HTMLElement} el
- * @param {string[]} dates - ISO dates of full days, oldest first
+ * @param {string[]} dates - ISO dates of full days in this set, oldest first
  * @param {number} target  - how many days make a level
  */
 function renderDragonRow(el, dates, target) {
   el.innerHTML = '';
 
-  // If she banks more days than a level needs — she hit five but hasn't been moved
-  // up yet — show the most recent five. Taking the first five instead would freeze
-  // the row on her oldest dragons and hide every new one she earns.
-  const shown = dates.slice(-target);
-
   const row = document.createElement('div');
   row.className = 'dragon-row';
 
   for (let i = 0; i < target; i++) {
-    const iso = shown[i];
+    const iso = dates[i];
     const slot = document.createElement('div');
     slot.className = 'dragon-slot' + (iso ? ' earned' : '');
 
@@ -361,11 +359,75 @@ function renderDragonRow(el, dates, target) {
 
   const earned = Math.min(dates.length, target);
   const caption = document.createElement('p');
-  caption.className = 'dragon-row-caption' + (earned >= target ? ' ready' : '');
-  caption.textContent = earned >= target
-    ? '⭐ Five dragons! Ready for the next level.'
-    : `${earned} of ${target} dragons collected`;
+  caption.className = 'dragon-row-caption';
+  caption.textContent = `${earned} of ${target} dragons collected`;
 
   el.appendChild(row);
   el.appendChild(caption);
+}
+
+/**
+ * A finished set: the five dragons ringed around the level they were earned at.
+ *
+ * Sets are drawn at the foot of the page as soon as their fifth dragon lands,
+ * so the row at the top can start again from empty while the completed five
+ * stay on the page as something she keeps.
+ *
+ * @param {HTMLElement} el
+ * @param {{level:number, dates:string[]}[]} sets - oldest first
+ * @param {number} currentLevel
+ */
+function renderDragonSets(el, sets, currentLevel) {
+  el.innerHTML = '';
+  if (!sets.length) return;
+
+  const heading = document.createElement('p');
+  heading.className = 'dragon-sets-title';
+  heading.textContent = sets.length === 1 ? 'Dragon set collected' : 'Dragon sets collected';
+  el.appendChild(heading);
+
+  const row = document.createElement('div');
+  row.className = 'dragon-sets';
+  sets.forEach(set => row.appendChild(_dragonSetBadge(set)));
+  el.appendChild(row);
+
+  // The level is still changed by a parent in the portal, so say so here rather
+  // than in the top row — that row has already reset to zero by this point.
+  if (sets.some(s => s.level === currentLevel)) {
+    const note = document.createElement('p');
+    note.className = 'dragon-row-caption ready';
+    note.textContent = `⭐ Level ${currentLevel} set complete — ready for the next level!`;
+    el.appendChild(note);
+  }
+}
+
+/** One set badge: five dragons evenly spaced around the level number. */
+function _dragonSetBadge(set) {
+  const RADIUS = 52;   // matches .dragon-set / .dragon-set-slot sizes in main.css
+
+  const badge = document.createElement('div');
+  badge.className = 'dragon-set';
+
+  const names = [];
+  set.dates.forEach((iso, i) => {
+    const ch = characterForDate(new Date(iso + 'T00:00:00'));
+    names.push(ch.file);
+    // Start at the top and go clockwise, so the first dragon she earned is the
+    // one at twelve o'clock.
+    const angle = (-90 + i * (360 / set.dates.length)) * Math.PI / 180;
+    const slot = document.createElement('div');
+    slot.className = 'dragon-set-slot';
+    slot.style.left = `calc(50% + ${(Math.cos(angle) * RADIUS).toFixed(1)}px)`;
+    slot.style.top  = `calc(50% + ${(Math.sin(angle) * RADIUS).toFixed(1)}px)`;
+    slot.innerHTML = `<img src="${DRAGON_DIR}/${ch.file}.webp" alt="${ch.file} the ${ch.tribe}">`;
+    badge.appendChild(slot);
+  });
+
+  const centre = document.createElement('div');
+  centre.className = 'dragon-set-level';
+  centre.innerHTML = `<span class="lbl">Level</span><span class="num">${set.level}</span>`;
+  badge.appendChild(centre);
+
+  badge.title = `Level ${set.level} — ${names.join(', ')}`;
+  return badge;
 }
